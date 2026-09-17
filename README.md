@@ -140,10 +140,37 @@ silently:
 Push to `main`. GitHub Actions runs the tests, builds with
 `BASE_PATH=/<repo>/`, and deploys to Pages.
 
-The bundle carries a build number — `git rev-list --count HEAD`. `deploy.yml`
-sets `fetch-depth: 0` because `actions/checkout` clones shallow by default,
-which would pin every deployed build at `1`: worse than no version at all,
-because it looks like one and never changes.
+## Which build am I looking at
+
+Every page carries its build number in the header — `v11`, counted with
+`git rev-list --count HEAD`, so v43 is the 43rd commit and maps back to exactly
+one:
+
+```bash
+git rev-list --reverse HEAD | sed -n '43p'
+```
+
+Clicking it forces a genuinely fresh fetch of the document and reloads.
+
+That button exists because of a specific trap: **GitHub Pages serves HTML with
+about a ten-minute cache**, so a deploy can be finished and green and still be
+invisible in an open tab — and an ordinary reload cheerfully serves the cached
+copy again. This cost me several minutes chasing a phone layout that was
+"still broken", until I noticed the stylesheet's content hash had not changed
+and realised I was not looking at the build I had just shipped. `fetch(url,
+{cache: 'reload'})` skips the cache *and replaces the stored entry*, so the
+reload after it gets the new document.
+
+`restroom-map` has the same widget for a different reason — its service worker
+precaches the bundle and a hard refresh does not go round it. There is no
+service worker here, so that fix was not copied along with the idea; this one
+clears the Cache API anyway, so it keeps telling the truth if somebody adds one.
+
+`deploy.yml` sets `fetch-depth: 0` because `actions/checkout` clones shallow by
+default, which would pin every deployed build at `1` — worse than no version at
+all, because it looks like one and never changes. `astro.config.mjs` **fails
+the build** if it sees a count of 1 in CI, so removing that line breaks loudly
+instead of silently.
 
 ## Where this is going
 

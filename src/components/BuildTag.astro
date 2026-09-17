@@ -1,0 +1,73 @@
+---
+import { buildLabel } from '@minormending/map-kit'
+
+/**
+ * Which build you are actually looking at, and a way out when it is the wrong
+ * one.
+ *
+ * `restroom-map` carries one of these because its service worker precaches the
+ * bundle and a hard refresh does not go round it — the worker still controls
+ * the navigation and answers with what it has. There is no service worker
+ * here, so that exact reasoning does not apply and it would be cargo cult to
+ * copy the fix along with the widget.
+ *
+ * The trap here is a different one, and it cost me several minutes today:
+ * **GitHub Pages serves HTML with about a ten-minute cache.** A deploy can
+ * have finished, gone green, and still be invisible in an open tab — and an
+ * ordinary reload happily serves the cached document again. I chased a phone
+ * layout that was "still broken" until I noticed the stylesheet's content hash
+ * had not changed, which meant I was not looking at the build I had just
+ * shipped.
+ *
+ * So the number is here to be read out when something looks wrong, and
+ * clicking it forces the document itself to be refetched rather than
+ * revalidated. The hashed assets need no special handling: once the HTML is
+ * current it references new filenames, and those have never been cached under
+ * the old names.
+ *
+ * The count comes from `git rev-list --count HEAD`, so v43 is the 43rd commit
+ * and maps back to exactly one:
+ *
+ *   git rev-list --reverse HEAD | sed -n '43p'
+ */
+const label = buildLabel(__BUILD_ID__)
+---
+<button
+  type="button"
+  class="build-tag"
+  data-build={__BUILD_ID__}
+  title="Reload, bypassing the cache"
+  aria-label={`Version ${__BUILD_ID__}. Reload, bypassing the cache.`}
+>
+  {label}
+</button>
+
+<script>
+  const tag = document.querySelector<HTMLButtonElement>('.build-tag')
+
+  tag?.addEventListener('click', async () => {
+    tag.disabled = true
+    tag.textContent = 'updating…'
+
+    try {
+      // Nothing puts anything in the Cache API here today. Clearing it anyway
+      // costs one call and means this keeps working the day somebody adds a
+      // service worker, rather than quietly becoming a lie.
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((k) => caches.delete(k)))
+      }
+
+      // The load-bearing line. `cache: 'reload'` skips the cache on the way
+      // out and *replaces* the stored entry with what comes back, so the
+      // reload below gets the new document. A plain location.reload() would
+      // be served the stale one again, which is the whole problem.
+      await fetch(window.location.href, { cache: 'reload', credentials: 'same-origin' })
+    } catch {
+      // Private windows, blocked storage and offline all land here. Reloading
+      // is still worth doing; it is the half that sometimes works alone.
+    }
+
+    window.location.reload()
+  })
+</script>

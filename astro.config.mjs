@@ -18,13 +18,38 @@ import sitemap from '@astrojs/sitemap'
  */
 function buildId() {
   if (process.env.BUILD_ID) return process.env.BUILD_ID
+
+  let count
   try {
-    return execSync('git rev-list --count HEAD', {
+    count = execSync('git rev-list --count HEAD', {
       stdio: ['ignore', 'pipe', 'ignore'],
-    }).toString().trim() || 'dev'
+    }).toString().trim()
   } catch {
+    // No git at all — a tarball, say. Say so rather than inventing a number:
+    // a wrong version is worse than an obviously missing one when the whole
+    // point is reading it out when something looks wrong.
     return 'dev'
   }
+
+  /*
+   * A count of 1 from CI means a shallow clone, not a first commit.
+   *
+   * This is the failure the version number exists to survive, and it is
+   * silent: actions/checkout clones with depth 1 by default, every build then
+   * stamps v1, and the tag looks like a version while never changing — worse
+   * than having none, because people trust it. deploy.yml sets fetch-depth: 0
+   * for exactly this reason, and this is what notices when somebody removes
+   * it. restroom-map's audit repo is still living with the unguarded version.
+   */
+  if (process.env.CI && count === '1') {
+    throw new Error(
+      'git rev-list --count HEAD returned 1 in CI, which means a shallow ' +
+      'clone. Set `fetch-depth: 0` on actions/checkout, or pass BUILD_ID ' +
+      'explicitly if this really is the first commit.',
+    )
+  }
+
+  return count || 'dev'
 }
 
 // GitHub Pages serves project sites from /<repo>/. Derived in CI from the repo

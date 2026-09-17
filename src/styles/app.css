@@ -108,6 +108,7 @@ a { color: var(--accent); }
 .site-head nav {
   margin-left: auto;
   display: flex;
+  align-items: center;
   gap: 0.9rem;
   font-size: 0.85rem;
 }
@@ -657,3 +658,30 @@ a { color: var(--accent); }
   font-size: 0.82rem;
   box-shadow: var(--shadow);
 }
+
+/* --- which build this is -------------------------------------------------- */
+
+/*
+ * In the header rather than the footer. It is a utility control, it wants to
+ * be reachable without scrolling, and on a phone the compact footer has no
+ * line to spare — putting it there added one back that I had just removed.
+ */
+.build-tag {
+  display: inline-flex;
+  align-items: center;
+  /* A thumb target. The thing you reach for when something looks wrong should
+     not need a second attempt. */
+  min-height: 2rem;
+  padding: 0.15rem 0.6rem;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.build-tag:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.build-tag:disabled { cursor: default; opacity: 0.7; }
