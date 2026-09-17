@@ -16,7 +16,8 @@
     "db:queue": "node scripts/db.mjs queue",
     "test:schema": "node scripts/test-schema.mjs",
     "db:verify": "bash scripts/verify-schema.sh",
-    "db:provision": "node scripts/provision-supabase.mjs"
+    "db:provision": "node scripts/provision-supabase.mjs",
+    "test:api": "node scripts/test-api.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",

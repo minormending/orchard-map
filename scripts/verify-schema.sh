@@ -39,8 +39,11 @@ cat > /tmp/orchard-shim.sql <<'SQL'
 create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;
 create schema if not exists auth;
+-- No default on id, matching a real Supabase project: GoTrue generates it in
+-- the application layer. Defaulting it here let the harness get away with
+-- omitting it, and that passed locally and failed on the first real project.
 create table if not exists auth.users (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key,
   email text,
   raw_user_meta_data jsonb default '{}'::jsonb
 );

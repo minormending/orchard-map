@@ -15,12 +15,35 @@
  * schema says.
  */
 import pg from 'pg'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { dbConfig } from '@minormending/map-kit/node/connect'
 
-const URL = process.env.ORCHARD_TEST_DB
-  ?? 'postgres://postgres:verify@localhost:55432/postgres'
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-const client = new pg.Client({ connectionString: URL })
+/*
+ * Three ways to point this somewhere, in order of explicitness:
+ *
+ *   ORCHARD_TEST_DB      an explicit connection string
+ *   --local              the throwaway container from `pnpm db:verify`
+ *   (default)            the project in .env, via the same config db.mjs uses
+ *
+ * Running against the real project is safe by construction: every test is a
+ * transaction that is rolled back, so nothing it writes survives it. That is
+ * also the only way to check the things a container cannot have — Supabase's
+ * own auth.users, its roles, and PostgREST's view of the functions.
+ */
+const config = process.env.ORCHARD_TEST_DB
+  ? { connectionString: process.env.ORCHARD_TEST_DB }
+  : process.argv.includes('--local')
+    ? { connectionString: 'postgres://postgres:verify@localhost:55432/postgres' }
+    : dbConfig({ root: ROOT, applicationName: 'orchard-map/test-schema' })
+
+const client = new pg.Client(config)
 await client.connect()
+
+const where = config.connectionString?.includes('localhost') ? 'local container' : 'the configured project'
+console.log(`running against ${where}\n`)
 
 const tests = []
 const test = (name, fn) => tests.push({ name, fn })
@@ -78,12 +101,20 @@ async function raises(fn, { code, message } = {}) {
   return err
 }
 
-/** A user, made the way Supabase's signup trigger would. */
+/**
+ * A user, made the way Supabase makes one.
+ *
+ * The id is supplied rather than defaulted, because on a real project
+ * `auth.users.id` has NO default — GoTrue generates it in the application
+ * layer. A local shim that defaults it lets this pass everywhere and fail on
+ * the first real project, which is exactly what happened.
+ */
 async function makeUser(name) {
   const { rows } = await client.query(
-    `insert into auth.users (email, raw_user_meta_data)
-     values ($1::text, jsonb_build_object('full_name', $2::text)) returning id`,
-    [`${name}@test.invalid`, name])
+    `insert into auth.users (id, email, raw_user_meta_data)
+     values (gen_random_uuid(), $1::text, jsonb_build_object('full_name', $2::text))
+     returning id`,
+    [`${name}-${Date.now()}@test.invalid`, name])
   return rows[0].id
 }
 
