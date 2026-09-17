@@ -71,9 +71,35 @@ const varieties = read('varieties.json')
 
 let targets = orchards.filter((o) => o.website)
 if (ONLY) targets = targets.filter((o) => o.slug.includes(ONLY))
-targets = targets.slice(0, LIMIT)
 
-if (targets.length === 0) {
+/*
+ * Group by host, because four websites in this dataset serve two listings each
+ * — a farm and its cidery, or two locations of one business. Crawling per
+ * listing meant visiting those sites twice per run, which is the opposite of
+ * what the polite fetcher is for, and then attributing whatever was found to
+ * BOTH listings.
+ *
+ * That second part produced a real error on the first live run: Barton
+ * Orchards' u-pick price of $25 a peck, which belongs to the Poughquag farm,
+ * was attached to the Apple Core farm stand in Poughkeepsie as well, because
+ * both carry bartonorchards.com. A reader caught it. Nothing in the code would
+ * have.
+ *
+ * So: one crawl per host, and where a host serves several listings the
+ * deterministic observations are held back entirely — a regex cannot tell
+ * which of two businesses a sentence is about, and guessing is how a farm
+ * stand acquires a u-pick price it does not charge.
+ */
+const byHost = new Map()
+for (const o of targets) {
+  let host
+  try { host = new URL(o.website).host.replace(/^www\./, '') } catch { continue }
+  if (!byHost.has(host)) byHost.set(host, [])
+  byHost.get(host).push(o)
+}
+const hosts = [...byHost.entries()].slice(0, LIMIT)
+
+if (hosts.length === 0) {
   console.error('nothing to crawl')
   process.exit(1)
 }
@@ -99,7 +125,7 @@ let modelCalls = 0
 let tokensUsed = 0
 
 process.stderr.write(
-  `crawling ${targets.length} farms` +
+  `crawling ${hosts.length} sites (${targets.length} listings)` +
   (USE_MODEL
     ? modelTierAvailable()
       ? ` · model tier on (${MODEL})`
@@ -108,9 +134,9 @@ process.stderr.write(
   '\n\n',
 )
 
-for (const orchard of targets) {
-  const host = (() => { try { return new URL(orchard.website).host } catch { return null } })()
-  if (!host) continue
+for (const [host, sharing] of hosts) {
+  const orchard = sharing[0]
+  const shared = sharing.length > 1
 
   const run = {
     orchard_id: orchard.id,
@@ -125,7 +151,11 @@ for (const orchard of targets) {
     tokens_out: 0,
   }
 
-  process.stderr.write(`${orchard.name} (${host})\n`)
+  process.stderr.write(
+    shared
+      ? `${sharing.map((o) => o.name).join(' + ')} (${host}, shared)\n`
+      : `${orchard.name} (${host})\n`,
+  )
 
   const home = await fetcher.get(orchard.website)
   if (!home.ok) {
@@ -212,8 +242,12 @@ for (const orchard of targets) {
     }
   }
 
-  for (const o of best.values()) {
-    observations.push({ ...o, orchard_id: orchard.id, orchard_slug: orchard.slug })
+  // See the grouping note above: on a shared host a deterministic observation
+  // has no way to know which of the listings it is about, so it is not made.
+  if (!shared) {
+    for (const o of best.values()) {
+      observations.push({ ...o, orchard_id: orchard.id, orchard_slug: orchard.slug })
+    }
   }
 
   const summary = [...best.values()]
@@ -223,7 +257,10 @@ for (const orchard of targets) {
 
   process.stderr.write(
     `  ${run.pages} pages · ${summary.join(' · ') || 'nothing'}` +
-    (varietyCount ? ` · ${varietyCount} varieties` : '') + '\n',
+    (varietyCount ? ` · ${varietyCount} varieties` : '') +
+    // Otherwise the line reads as a list of things that were recorded, when
+    // on a shared host every one of them is being thrown away on purpose.
+    (shared ? ' — held back, shared site, left to the reader' : '') + '\n',
   )
 
   /*
@@ -241,6 +278,11 @@ for (const orchard of targets) {
       town: orchard.town,
       state: orchard.state,
       orchard_id: orchard.id,
+      /* When a site serves more than one listing, the reader is told so and
+         attributes each observation itself — it is the only party that can. */
+      shares_site_with: shared
+        ? sharing.slice(1).map((o) => ({ slug: o.slug, name: o.name, town: o.town }))
+        : [],
       queued_at: new Date().toISOString(),
       missing: [!haveOpen && 'upick_open', !haveHours && 'hours'].filter(Boolean),
       // Text, never HTML. The reader has no use for markup and it is a third
@@ -315,8 +357,12 @@ if (AS_SQL) {
 }
 
 if (OUT) {
-  writeFileSync(join(ROOT, OUT), JSON.stringify({ runs, observations }, null, 2) + '\n')
-  process.stderr.write(`wrote ${OUT}\n`)
+  // join() with an absolute second argument silently nests it under ROOT, so
+  // `--out /tmp/x.json` wrote to <repo>/tmp/x.json and looked like it had done
+  // nothing at all.
+  const out = OUT.startsWith('/') ? OUT : join(ROOT, OUT)
+  writeFileSync(out, JSON.stringify({ runs, observations }, null, 2) + '\n')
+  process.stderr.write(`wrote ${out}\n`)
 }
 
 if (!AS_SQL && !OUT) {

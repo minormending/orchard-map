@@ -58,6 +58,16 @@ it after reading what you produced.
 Work through **at most 15 files per run**, in the order `ls` gives them —
 `scrape.mjs` already sorted the queue so pick-your-own farms come first.
 
+**If `shares_site_with` is not empty, one website serves several listings** —
+a farm and its cidery, or two locations of one business. The crawler cannot
+tell which of them a sentence is about, so it records nothing for those and
+leaves the attribution to you. Read carefully and put each observation against
+the listing it actually belongs to, using `orchard_slug`. Where a page does not
+make it clear which business it means, record nothing: Barton Orchards' u-pick
+price of $25 a peck belongs to the Poughquag farm and not to the Apple Core
+farm stand in Poughkeepsie, and attaching it to both is a price somebody turns
+up expecting to pay.
+
 For each file, read `pages[].text` and decide:
 
 | field | record it when |
