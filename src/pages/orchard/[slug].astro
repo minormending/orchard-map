@@ -1,0 +1,129 @@
+---
+import Base from '../../layouts/Base.astro'
+import { ORCHARDS, addressLine, directionsUrl, telUrl } from '../../lib/orchards'
+import { distanceM, milesLabel, tagLabels } from '../../lib/filters'
+import type { Orchard } from '../../lib/types'
+
+/**
+ * A real page per orchard, which is the whole reason this is Astro.
+ *
+ * "apple picking warwick ny" is the query that matters, and a single-page app
+ * cannot rank for it — there is one URL and its markup is a loading state.
+ * These 189 pages are the crawlable surface; the map is the tool people use
+ * once they are here.
+ */
+export function getStaticPaths() {
+  return ORCHARDS.map((orchard) => ({
+    params: { slug: orchard.slug },
+    props: { orchard },
+  }))
+}
+
+interface Props { orchard: Orchard }
+const { orchard } = Astro.props
+const base = import.meta.env.BASE_URL
+
+const where = addressLine(orchard)
+const tags = tagLabels(orchard)
+const upick = orchard.tags.includes('pick_your_own')
+
+const nearby = ORCHARDS
+  .filter((o) => o.slug !== orchard.slug)
+  .map((o) => ({ o, d: distanceM(orchard, o) }))
+  .sort((a, b) => a.d - b.d)
+  .slice(0, 5)
+
+const title = `${orchard.name}${orchard.town ? ` — ${orchard.town}, ${orchard.state}` : ''}`
+const description = upick
+  ? `${orchard.name} is a pick-your-own apple orchard in ${orchard.town ?? 'New York'}. Directions, phone and what it offers — plus what nobody has checked yet.`
+  : `${orchard.name} in ${orchard.town ?? 'New York'}: ${tags.join(', ').toLowerCase() || 'an apple grower'}. Directions, phone and hours.`
+
+/**
+ * Schema.org, with a deliberate omission: no `openingHours`.
+ *
+ * We do not know them. Every orchard site sampled while scoping this published
+ * none in machine-readable form, so emitting a guess would put a wrong answer
+ * into Google's knowledge panel — where it would outlive any correction made
+ * here. An absent field is recoverable; a confident wrong one is not.
+ */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': upick ? 'Farm' : 'LocalBusiness',
+  name: orchard.name,
+  ...(orchard.phone ? { telephone: orchard.phone } : {}),
+  ...(orchard.website ? { url: orchard.website } : {}),
+  address: {
+    '@type': 'PostalAddress',
+    ...(orchard.address ? { streetAddress: orchard.address } : {}),
+    ...(orchard.town ? { addressLocality: orchard.town } : {}),
+    ...(orchard.state ? { addressRegion: orchard.state } : {}),
+    ...(orchard.zip ? { postalCode: orchard.zip } : {}),
+    addressCountry: 'US',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: orchard.lat, longitude: orchard.lng },
+}
+---
+<Base title={`${title} | Orchard Map`} description={description}>
+  <p class="crumbs"><a href={base}>← All orchards</a></p>
+
+  <h1>{orchard.name}</h1>
+  {where && <p class="where">{where}</p>}
+
+  <p>
+    <a class="button" href={directionsUrl(orchard)} target="_blank" rel="noreferrer">Directions</a>
+    {orchard.phone && <a class="button button-quiet" href={telUrl(orchard.phone)}>{orchard.phone}</a>}
+    {orchard.website && (
+      <a class="button button-quiet" href={orchard.website} target="_blank" rel="noreferrer nofollow">
+        Their website
+      </a>
+    )}
+    <a class="button button-quiet" href={`${base}?at=${orchard.slug}`}>Show on the map</a>
+  </p>
+
+  <h2>What they do</h2>
+  {tags.length > 0 ? (
+    <ul>{tags.map((t) => <li>{t}</li>)}</ul>
+  ) : (
+    <p class="unknown">The association lists them without a category.</p>
+  )}
+
+  <h2>What we do not know</h2>
+  <div class="callout">
+    <p>
+      <strong>Nobody has checked this farm's hours, prices, or whether picking is
+      open.</strong> Everything above came from a trade-association roster, which says
+      the farm exists and sells apples — not that you can pick them this weekend.
+    </p>
+    <p>
+      Fields like dogs, restrooms, hayrides and cider donuts are deliberately absent
+      rather than shown as "no". An empty answer is honest; a wrong one costs you a
+      two-hour drive.
+    </p>
+  </div>
+
+  <h2>Details</h2>
+  <table class="facts">
+    <tbody>
+      <tr><th>Opening hours</th><td class="unknown">Not checked</td></tr>
+      <tr><th>Picking open now</th><td class="unknown">Not checked</td></tr>
+      <tr><th>Admission</th><td class="unknown">Not checked</td></tr>
+      <tr><th>Varieties</th><td class="unknown">Not recorded yet</td></tr>
+      <tr>
+        <th>Listed by</th>
+        <td>New York Apple Association (no licence stated), imported {orchard.imported_at}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Nearest others</h2>
+  <ul class="nearby">
+    {nearby.map(({ o, d }) => (
+      <li>
+        <a href={`${base}orchard/${o.slug}`}>{o.name}</a>
+        <span class="n-where"> — {o.town}, {milesLabel(d)} away</span>
+      </li>
+    ))}
+  </ul>
+
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+</Base>

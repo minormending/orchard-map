@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro'
+import { MapExplorer } from '../components/MapExplorer'
+import { ORCHARDS } from '../lib/orchards'
+
+const base = import.meta.env.BASE_URL
+const upick = ORCHARDS.filter((o) => o.tags.includes('pick_your_own')).length
+---
+<Base
+  title="Orchard Map — apple picking near New York"
+  description={`${ORCHARDS.length} apple orchards, cider mills and farm markets within a day trip of New York City, with ${upick} offering pick-your-own. Filter by what you actually want to do.`}
+  wide
+>
+  <!--
+    client:only rather than client:load. MapLibre reaches for `window` and for
+    a WebGL context during module evaluation, so server-rendering this island
+    fails the build rather than producing markup worth having. The orchard
+    pages are the static, crawlable surface; this one is the tool.
+  -->
+  <MapExplorer client:only="react" orchards={ORCHARDS} base={base} />
+</Base>

@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro'
+import { ORCHARDS } from '../lib/orchards'
+
+const upick = ORCHARDS.filter((o) => o.tags.includes('pick_your_own')).length
+const cider = ORCHARDS.filter((o) => o.tags.includes('craft_cider')).length
+const sites = ORCHARDS.filter((o) => o.website).length
+---
+<Base
+  title="About | Orchard Map"
+  description="Where the orchard data comes from, what is missing from it, and why the missing parts are shown as missing."
+>
+  <h1>About</h1>
+
+  <p>
+    {ORCHARDS.length} apple orchards, cider mills and farm markets within about two
+    and a half hours of New York City — {upick} of them pick-your-own, {cider} making
+    hard cider or spirits.
+  </p>
+
+  <h2>Where the listings come from</h2>
+  <p>
+    The <a href="https://www.applesfromny.com/" rel="noreferrer nofollow">New York Apple
+    Association</a>'s member directory. It carries names, addresses, coordinates,
+    phone numbers, websites and categories, which is more than any other single
+    source has.
+  </p>
+  <p>
+    OpenStreetMap was the obvious first choice and turned out not to work. Across
+    this whole region, <code>self_harvesting=yes</code> — the OSM tag that means
+    pick-your-own — appears on <strong>exactly one</strong> feature, and only 82
+    farm shops carry a website at all. It is a good source of orchard
+    <em>polygons</em> and a poor source of orchard <em>facts</em>.
+  </p>
+  <p>
+    The association states no licence for its directory. That is ambiguity rather
+    than permission, so every row here records where it came from and when, and
+    withdrawing the source would be one filter rather than an archaeology project.
+  </p>
+
+  <h2>Greenmarkets are not on the map</h2>
+  <p>
+    The directory also lists 51 New York City greenmarket stalls — a folding table on
+    a pavement on 175th Street. That is a fact about the grower who drives down, not
+    about the corner, and somebody looking for somewhere to spend Saturday does not
+    want them in the results. Farms that sell at greenmarkets <em>and</em> grow
+    apples, like Fishkill Farms, are here.
+  </p>
+
+  <h2>What is missing, and why it says so</h2>
+  <p>
+    Opening hours, whether picking is open, prices, varieties, dogs, restrooms,
+    hayrides, cider donuts — none of it is checked yet. {sites} of these farms have a
+    website, and a scraper that reads them is the next piece of work.
+  </p>
+  <p>
+    Until then those fields are shown as unchecked rather than as "no". The
+    distinction matters more here than it looks: a wrong "open" costs somebody a
+    two-hour drive with children in the car, and the only thing worse than a map
+    that does not know is a map that pretends to.
+  </p>
+
+  <h2>Source</h2>
+  <p>
+    <a href="https://github.com/minormending/orchard-map" rel="noreferrer">github.com/minormending/orchard-map</a>.
+    Corrections are welcome, and accounts for submitting them are coming.
+  </p>
+</Base>

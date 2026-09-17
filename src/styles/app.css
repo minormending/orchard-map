@@ -1,0 +1,408 @@
+/* Autumn, without being twee about it. */
+:root {
+  --bg: #fbf7f0;
+  --surface: #ffffff;
+  --surface-2: #f4ede1;
+  --ink: #2a241d;
+  --ink-2: #6b6054;
+  --line: #e2d7c6;
+  --apple: #c2384a;
+  --cider: #c8792a;
+  --leaf: #4a7c4e;
+  --accent: var(--apple);
+  --radius: 10px;
+  --shadow: 0 1px 2px rgb(42 36 29 / 8%), 0 8px 24px rgb(42 36 29 / 8%);
+  --panel-w: 23rem;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17140f;
+    --surface: #211d17;
+    --surface-2: #2b251d;
+    --ink: #f0e9dd;
+    --ink-2: #a89d8c;
+    --line: #3a3228;
+    --apple: #e06a78;
+    --cider: #e0a05c;
+    --leaf: #7bab7f;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 35%);
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--accent); }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Anything focusable must show it. Half these taps happen outdoors on a phone
+   in bright sun, where a subtle focus ring is no focus ring. */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- shell --------------------------------------------------------------- */
+
+/* Content pages scroll like documents. */
+.site {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/*
+ * The map page does not. Without a definite height the grid row is sized by
+ * the list inside it, and 189 cards make the page 17,000 pixels tall with the
+ * map pushed off the bottom of it. A fixed shell is what makes `overflow-y:
+ * auto` on the list mean anything at all.
+ */
+.site-fixed {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.site-fixed .explorer { min-height: 0; }
+
+.site-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  flex: none;
+}
+
+.site-head h1 {
+  font-size: 1.05rem;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.site-head h1 a { color: inherit; text-decoration: none; }
+
+.site-head .tagline {
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.site-head nav {
+  margin-left: auto;
+  display: flex;
+  gap: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.site-foot {
+  padding: 1.25rem 1rem 2rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  background: var(--surface);
+}
+
+.site-foot p { margin: 0.3rem 0; max-width: 60ch; }
+
+/* On the map page the footer competes with the map for height, so it shrinks
+   to one line. The tile credits are already in MapLibre's own control. */
+.site-foot-compact {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.site-foot-compact p { margin: 0; }
+
+/* --- explorer ------------------------------------------------------------ */
+
+.explorer {
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--panel-w) 1fr;
+  min-height: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  min-height: 0;
+}
+
+.panel-controls {
+  padding: 0.85rem;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.7rem;
+}
+
+.search input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+.chip {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.chip:hover { border-color: var(--accent); color: var(--ink); }
+
+.chip-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+
+.count {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  display: flex;
+  gap: 0.7rem;
+  align-items: baseline;
+}
+
+.count strong { color: var(--ink); font-size: 0.95rem; }
+
+.link {
+  font: inherit;
+  font-size: 0.8rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.card {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 0.7rem 0.85rem;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  color: inherit;
+}
+
+.card:hover { background: var(--surface-2); }
+.card-on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
+.card-name { font-weight: 600; }
+.card-where { font-size: 0.82rem; color: var(--ink-2); }
+.card-where em { font-style: normal; }
+.card-tags { font-size: 0.76rem; color: var(--ink-2); }
+
+.empty { padding: 1.5rem 1rem; }
+.empty p { margin: 0 0 0.5rem; }
+.muted { color: var(--ink-2); font-size: 0.85rem; }
+
+/* --- map ----------------------------------------------------------------- */
+
+.map-wrap { position: relative; min-height: 0; }
+.map-canvas { position: absolute; inset: 0; }
+
+.sheet {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  width: min(24rem, calc(100% - 2rem));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.95rem 1.05rem 1.05rem;
+  z-index: 5;
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+}
+
+.sheet h2 { margin: 0 2rem 0.2rem 0; font-size: 1.1rem; }
+.sheet-where { margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--ink-2); }
+.sheet-where em { font-style: normal; }
+
+.sheet-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-radius: 50%;
+}
+.sheet-close:hover { background: var(--surface-2); color: var(--ink); }
+
+.sheet-tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0 0 0.8rem;
+  padding: 0;
+}
+
+.sheet-tags li {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.sheet-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
+
+.button {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid var(--accent);
+}
+
+.button-quiet {
+  background: var(--bg);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.sheet-caveat {
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+  border-left: 3px solid var(--cider);
+  padding-left: 0.6rem;
+}
+
+.sheet-more { font-size: 0.85rem; }
+
+.list-toggle { display: none; }
+
+/* --- orchard page -------------------------------------------------------- */
+
+.page { max-width: 42rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.page h1 { font-size: 1.6rem; margin: 0 0 0.25rem; letter-spacing: -0.02em; }
+.page .where { color: var(--ink-2); margin: 0 0 1rem; }
+.page h2 { font-size: 1rem; margin: 1.8rem 0 0.5rem; }
+
+.facts { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+.facts th, .facts td { text-align: left; padding: 0.45rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.facts th { font-weight: 500; color: var(--ink-2); width: 11rem; }
+
+.unknown { color: var(--ink-2); font-style: italic; }
+
+.callout {
+  background: var(--surface-2);
+  border-left: 3px solid var(--cider);
+  padding: 0.8rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.9rem;
+  margin: 1.2rem 0;
+}
+.callout p { margin: 0.3rem 0; }
+
+.crumbs { font-size: 0.85rem; margin: 0 0 1rem; }
+
+.nearby { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+.nearby a { text-decoration: none; }
+.nearby .n-where { color: var(--ink-2); font-size: 0.82rem; }
+
+/* --- narrow -------------------------------------------------------------- */
+
+@media (max-width: 52rem) {
+  .explorer { grid-template-columns: 1fr; position: relative; }
+
+  /* The map is the page on a phone; the list slides over it. */
+  .panel {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    transform: translateY(100%);
+    transition: transform 0.22s ease;
+    border-right: 0;
+  }
+
+  .panel-open { transform: translateY(0); }
+
+  .list-toggle {
+    display: block;
+    position: absolute;
+    z-index: 20;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.5rem 1.2rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+
+  .sheet { left: 0.5rem; right: 0.5rem; bottom: 4rem; width: auto; }
+  .site-head { flex-wrap: wrap; }
+  .site-head .tagline { flex-basis: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { transition: none; }
+}

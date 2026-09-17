@@ -1,0 +1,9 @@
+---
+import Base from '../layouts/Base.astro'
+const base = import.meta.env.BASE_URL
+---
+<Base title="Not found | Orchard Map" description="No such page.">
+  <h1>Not here</h1>
+  <p>That page does not exist — possibly an orchard that has since been renamed.</p>
+  <p><a href={base}>Back to the map</a></p>
+</Base>
