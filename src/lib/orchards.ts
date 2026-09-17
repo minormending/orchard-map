@@ -1,4 +1,4 @@
-import raw from '../data/orchards.json'
+import raw from '../data/orchards.json' with { type: 'json' }
 import type { Orchard } from './types'
 
 /**

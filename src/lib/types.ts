@@ -74,16 +74,29 @@ export interface Orchard {
   checked_at?: string | null
 }
 
-/** One apple, and roughly when it is ready. */
+/**
+ * One apple, and roughly when it is ready.
+ *
+ * `start_doy`/`end_doy` are the days of the year the PICKING window typically
+ * opens and closes in the Hudson Valley. They are regional averages, and they
+ * are deliberately not the association's own "availability" figure — that is
+ * when the apple is on sale out of cold storage, which for several varieties
+ * runs into the following spring. Null when there is no reliable window; such
+ * a variety is left out of "ripe now" rather than guessed into it.
+ */
 export interface Variety {
   slug: string
   name: string
-  /** Day-of-year the picking window typically opens and closes in this region.
-   *  Regional averages, corrected per-orchard by observation once we have any. */
-  start_doy: number
-  end_doy: number
   /** Sweet / tart / balanced — the thing people actually choose on. */
   flavour: 'sweet' | 'tart' | 'balanced'
+  profile: string[]
   best_for: string[]
-  note?: string
+  hint: string | null
+  start_doy: number | null
+  end_doy: number | null
+  harvest_from: string | null
+  harvest_to: string | null
+  harvest_source: string | null
+  import_source: string
+  import_licence: string
 }

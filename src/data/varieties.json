@@ -1,0 +1,616 @@
+[
+  {
+    "slug": "jersey-mac",
+    "name": "Jersey Mac",
+    "flavour": "balanced",
+    "profile": [
+      "Sweet",
+      "Tart",
+      "Juicy"
+    ],
+    "best_for": [
+      "Good for fresh eating",
+      "Good for pies and applesauce"
+    ],
+    "hint": "Tender flesh cooks quickly, so add a thickener if making a pie.",
+    "start_doy": 222,
+    "end_doy": 248,
+    "harvest_from": "08-10",
+    "harvest_to": "09-05",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "paula-red",
+    "name": "Paula Red",
+    "flavour": "tart",
+    "profile": [
+      "Tart",
+      "Juicy",
+      "Crisp white flesh"
+    ],
+    "best_for": [
+      "Excellent for eating",
+      "Good for applesauce"
+    ],
+    "hint": "Paula Red applesauce needs little or no sugar.",
+    "start_doy": 232,
+    "end_doy": 258,
+    "harvest_from": "08-20",
+    "harvest_to": "09-15",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "zestar",
+    "name": "Zestar!®",
+    "flavour": "balanced",
+    "profile": [
+      "Crisp and juicy",
+      "Sprightly, sweet/tart taste with a hint of brown sugar"
+    ],
+    "best_for": [
+      "Excellent for eating"
+    ],
+    "hint": "Zestar! apples maintain their great taste and crunch for two months in refrigeration, so you can keep that zesty crunch after hours in a lunchbox, days in a fruit bowl, or even weeks in the refrigerator.",
+    "start_doy": 232,
+    "end_doy": 253,
+    "harvest_from": "08-20",
+    "harvest_to": "09-10",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "ginger-gold",
+    "name": "Ginger Gold",
+    "flavour": "balanced",
+    "profile": [
+      "Sweet with mildly tart overtones",
+      "Fine textured, crisp cream-colored flesh"
+    ],
+    "best_for": [
+      "Excellent for eating and salads"
+    ],
+    "hint": "Ginger Gold is very slow to turn brown, so it's an excellent choice for any fresh-cut apple use.",
+    "start_doy": 237,
+    "end_doy": 263,
+    "harvest_from": "08-25",
+    "harvest_to": "09-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "sweetango",
+    "name": "SweeTango",
+    "flavour": "balanced",
+    "profile": [],
+    "best_for": [],
+    "hint": null,
+    "start_doy": 237,
+    "end_doy": 258,
+    "harvest_from": "08-25",
+    "harvest_to": "09-15",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "20-ounce",
+    "name": "20 Ounce",
+    "flavour": "tart",
+    "profile": [
+      "Pale yellow flesh",
+      "Firm, tender, juicy and tart"
+    ],
+    "best_for": [
+      "Excellent for cooking",
+      "Best for pies, apple sauce and baking"
+    ],
+    "hint": "It's Grandma's favorite apple for pies.",
+    "start_doy": 244,
+    "end_doy": 268,
+    "harvest_from": "09-01",
+    "harvest_to": "09-25",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "acey-mac",
+    "name": "Acey Mac",
+    "flavour": "balanced",
+    "profile": [
+      "Sweet",
+      "Tart",
+      "Juicy"
+    ],
+    "best_for": [
+      "Excellent for fresh eating",
+      "Good for sauces"
+    ],
+    "hint": "Tender flesh cooks quickly, so add a thickener if making a pie.",
+    "start_doy": 244,
+    "end_doy": 263,
+    "harvest_from": "09-01",
+    "harvest_to": "09-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "gala",
+    "name": "Gala",
+    "flavour": "sweet",
+    "profile": [
+      "Mild sweet flavor",
+      "Juicy",
+      "Crisp, creamy yellow flesh"
+    ],
+    "best_for": [
+      "Excellent for eating and salads"
+    ],
+    "hint": "Galas' size, mellow flavor and thin skin make them a perfect choice for lunches and snacks for kids.",
+    "start_doy": 244,
+    "end_doy": 268,
+    "harvest_from": "09-01",
+    "harvest_to": "09-25",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "jonamac",
+    "name": "Jonamac",
+    "flavour": "balanced",
+    "profile": [
+      "Firm flesh, crisp",
+      "Sweet/tart flavor",
+      "Cinnamon and nutmeg undertones"
+    ],
+    "best_for": [
+      "Excellent for eating"
+    ],
+    "hint": "If you are a fan of Jonathan apples and want a softer, sweeter experience, try Jonamac.",
+    "start_doy": 244,
+    "end_doy": 263,
+    "harvest_from": "09-01",
+    "harvest_to": "09-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "autumn-crisp",
+    "name": "Autumn Crisp",
+    "flavour": "balanced",
+    "profile": [],
+    "best_for": [],
+    "hint": null,
+    "start_doy": 253,
+    "end_doy": 278,
+    "harvest_from": "09-10",
+    "harvest_to": "10-05",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "honeycrisp",
+    "name": "Honeycrisp",
+    "flavour": "balanced",
+    "profile": [
+      "Complex, sweet-tart flavor",
+      "Juicy",
+      "Super-crisp yellow flesh"
+    ],
+    "best_for": [
+      "Excellent for eating and salads",
+      "Good for sauces, baking, and pies"
+    ],
+    "hint": "These ultra-crisp apples appeal to children and teens. They're a great way to encourage healthy snacking.",
+    "start_doy": 253,
+    "end_doy": 278,
+    "harvest_from": "09-10",
+    "harvest_to": "10-05",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "mcintosh",
+    "name": "McIntosh",
+    "flavour": "balanced",
+    "profile": [
+      "Sweet, with a tart tang",
+      "Very juicy",
+      "Tender, white flesh"
+    ],
+    "best_for": [
+      "Excellent for eating and sauces",
+      "Good for salads and pies"
+    ],
+    "hint": "McIntosh's tender flesh cooks down quickly. Add a thickener if making a pie.",
+    "start_doy": 253,
+    "end_doy": 283,
+    "harvest_from": "09-10",
+    "harvest_to": "10-10",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "cortland",
+    "name": "Cortland",
+    "flavour": "balanced",
+    "profile": [
+      "Sweet, with a hint of tartness",
+      "Juicy",
+      "Tender, snow-white flesh"
+    ],
+    "best_for": [
+      "Excellent for eating, salads, sauces, pies and baking",
+      "Good for freezing"
+    ],
+    "hint": "Cortland apples are wonderful for kabobs, fruit plates and garnishes because they don't turn brown quickly when cut.",
+    "start_doy": 263,
+    "end_doy": 293,
+    "harvest_from": "09-20",
+    "harvest_to": "10-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "empire",
+    "name": "Empire",
+    "flavour": "balanced",
+    "profile": [
+      "Wonderful blend of sweet and tart",
+      "Juicy",
+      "Very crisp, creamy white flesh"
+    ],
+    "best_for": [
+      "Excellent for eating and salads",
+      "Good for sauces, baking, pies and freezing"
+    ],
+    "hint": "Small Empires are great for school lunches. Kids enjoy the sweet-tart taste and super crunchy texture.",
+    "start_doy": 263,
+    "end_doy": 293,
+    "harvest_from": "09-20",
+    "harvest_to": "10-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "snapdragon",
+    "name": "SnapDragon",
+    "flavour": "sweet",
+    "profile": [
+      "Extra sweet, with hints of vanilla and spice. Two-napkin juicy",
+      "Crispy texture"
+    ],
+    "best_for": [
+      "Excellent for fresh eating, great for salads, and gourmet recipes. Pack a",
+      "Snap for a sweet and healthy snack."
+    ],
+    "hint": "If you like Honeycrisp, you'll love SnapDragon. Annual high demand means the SnapDragon won't be here long. Get yours before they're all snapped up.",
+    "start_doy": 263,
+    "end_doy": 288,
+    "harvest_from": "09-20",
+    "harvest_to": "10-15",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "macoun",
+    "name": "Macoun",
+    "flavour": "sweet",
+    "profile": [
+      "Extra-sweet and aromatic",
+      "Very juicy",
+      "Tender, snow-white flesh"
+    ],
+    "best_for": [
+      "Excellent for eating",
+      "Good for sauces and salads"
+    ],
+    "hint": "Try serving Macoun slices with cheese for a sophisticated dessert in the autumn.",
+    "start_doy": 268,
+    "end_doy": 293,
+    "harvest_from": "09-25",
+    "harvest_to": "10-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "red-delicious",
+    "name": "Red Delicious",
+    "flavour": "sweet",
+    "profile": [
+      "Sweet",
+      "Juicy",
+      "Crisp, yellow flesh"
+    ],
+    "best_for": [
+      "Excellent for eating and salads"
+    ],
+    "hint": "Red Delicious apples look great for a long time, so they are an ideal choice for holiday centerpieces and wreaths.",
+    "start_doy": 268,
+    "end_doy": 288,
+    "harvest_from": "09-25",
+    "harvest_to": "10-15",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "cameo",
+    "name": "Cameo",
+    "flavour": "balanced",
+    "profile": [
+      "Tart, sweet flavor",
+      "Crispy"
+    ],
+    "best_for": [
+      "Fresh eating",
+      "Excellent for salads, pies, sauces and baking"
+    ],
+    "hint": null,
+    "start_doy": 274,
+    "end_doy": 293,
+    "harvest_from": "10-01",
+    "harvest_to": "10-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "crispin",
+    "name": "Crispin",
+    "flavour": "sweet",
+    "profile": [
+      "Sweet, yet very refreshing",
+      "Very juicy",
+      "Extra crisp"
+    ],
+    "best_for": [
+      "Excellent for eating, sauces, baking and freezing",
+      "Good for salads and pies"
+    ],
+    "hint": "Try Crispins for roasting whole apples or thick slices. They're a wonderful accompaniment for your favorite roast.",
+    "start_doy": 274,
+    "end_doy": 298,
+    "harvest_from": "10-01",
+    "harvest_to": "10-25",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "fortune",
+    "name": "Fortune",
+    "flavour": "balanced",
+    "profile": [
+      "Crisp, with a spicy flavor"
+    ],
+    "best_for": [
+      "Excellent for pies and sauces",
+      "Good for fresh eating"
+    ],
+    "hint": "Combine Fortune apples with a sweet apple, such as Golden Delicious, for tasty and well-balanced applesauce.",
+    "start_doy": 274,
+    "end_doy": 293,
+    "harvest_from": "10-01",
+    "harvest_to": "10-20",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "golden-delicious",
+    "name": "Golden Delicious",
+    "flavour": "sweet",
+    "profile": [
+      "Mild, sweet flavor",
+      "Juicy",
+      "Crisp, light yellow flesh"
+    ],
+    "best_for": [
+      "Excellent for eating, salads, and sauces",
+      "Good for pies, baking, and freezing"
+    ],
+    "hint": "You can put less sugar in pies and sauces made from Golden Delicious apples, because of the natural sweetness these apples provide.",
+    "start_doy": 274,
+    "end_doy": 298,
+    "harvest_from": "10-01",
+    "harvest_to": "10-25",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "idared",
+    "name": "Idared",
+    "flavour": "balanced",
+    "profile": [
+      "Sweetly tart",
+      "Juicy",
+      "Firm, pale, yellow-green flesh, sometimes tinted rosy pink"
+    ],
+    "best_for": [
+      "Excellent for sauces, cooking, baking and pies",
+      "Good for eating, salads and freezing"
+    ],
+    "hint": "Idareds make a beautifully colored applesauce. Cook the apples with the skins on and strain the sauce to get the best pink color.",
+    "start_doy": 274,
+    "end_doy": 298,
+    "harvest_from": "10-01",
+    "harvest_to": "10-25",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "jonagold",
+    "name": "Jonagold",
+    "flavour": "balanced",
+    "profile": [
+      "Honey sweet, with a hint of tartness",
+      "Juicy",
+      "Crisp, creamy yellow flesh"
+    ],
+    "best_for": [
+      "Excellent for eating, salads, sauces, and baking",
+      "Good for pies and freezing"
+    ],
+    "hint": "Jonagolds also make great fried apples. Simply sauté in a little butter and add a touch of cinnamon. No sugar needed.",
+    "start_doy": 274,
+    "end_doy": 298,
+    "harvest_from": "10-01",
+    "harvest_to": "10-25",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "rome",
+    "name": "Rome",
+    "flavour": "tart",
+    "profile": [
+      "Mildly tart",
+      "Firm, greenish white flesh"
+    ],
+    "best_for": [
+      "Excellent for sauces, baking and pies",
+      "Good for salads and freezing"
+    ],
+    "hint": "Combine Romes with a sweet apple, such as Golden Delicious, for a nicely tart'n' tasty blended applesauce.",
+    "start_doy": 278,
+    "end_doy": 303,
+    "harvest_from": "10-05",
+    "harvest_to": "10-30",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "braeburn",
+    "name": "Braeburn",
+    "flavour": "balanced",
+    "profile": [
+      "Sweet and tangy flavor",
+      "Aromatic and juicy",
+      "Super crisp texture with yellow flesh"
+    ],
+    "best_for": [
+      "Excellent for snacking and cooking",
+      "Good for sauces and salads"
+    ],
+    "hint": "This ultra-crisp apple will appeal to teens, a great way to encourage healthy snacking.",
+    "start_doy": 283,
+    "end_doy": 305,
+    "harvest_from": "10-10",
+    "harvest_to": "11-01",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "fuji",
+    "name": "Fuji",
+    "flavour": "sweet",
+    "profile": [
+      "Very sweet",
+      "Extremely juicy",
+      "Crisp, cream colored flesh"
+    ],
+    "best_for": [
+      "Excellent for eating and salads",
+      "Good for sauces"
+    ],
+    "hint": "Fuji applesauce needs little or no sugar.",
+    "start_doy": 283,
+    "end_doy": 305,
+    "harvest_from": "10-10",
+    "harvest_to": "11-01",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "granny-smith",
+    "name": "Granny Smith",
+    "flavour": "tart",
+    "profile": [
+      "Uncompromising crispness with an enjoyable tart taste."
+    ],
+    "best_for": [
+      "Great for baking, sautéing, and salads."
+    ],
+    "hint": "pair with a sweet, red apple like Gala for colorful, flavorful salads.",
+    "start_doy": 283,
+    "end_doy": 305,
+    "harvest_from": "10-10",
+    "harvest_to": "11-01",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "rubyfrost",
+    "name": "RubyFrost",
+    "flavour": "balanced",
+    "profile": [
+      "Perfect balance of sweet and tart",
+      "Deep and rich with a hearty crunch and ideal crisp texture"
+    ],
+    "best_for": [
+      "Excellent for eating, RubyFrost is the ultimate baking apple. Great for recipes both savory and sweet."
+    ],
+    "hint": "RubyFrost is very high in Vitamin C and slow to brown, making it ideal for pies and tarts.",
+    "start_doy": 283,
+    "end_doy": 309,
+    "harvest_from": "10-10",
+    "harvest_to": "11-05",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "wildtwist",
+    "name": "WildTwist®",
+    "flavour": "balanced",
+    "profile": [],
+    "best_for": [],
+    "hint": null,
+    "start_doy": 283,
+    "end_doy": 305,
+    "harvest_from": "10-10",
+    "harvest_to": "11-01",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  },
+  {
+    "slug": "evercrisp",
+    "name": "Evercrisp",
+    "flavour": "balanced",
+    "profile": [],
+    "best_for": [],
+    "hint": null,
+    "start_doy": 293,
+    "end_doy": 314,
+    "harvest_from": "10-20",
+    "harvest_to": "11-10",
+    "harvest_source": "regional-estimate",
+    "import_source": "nyaa",
+    "import_licence": "unstated"
+  }
+]

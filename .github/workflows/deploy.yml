@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Through the season the orchard pages state what is usually ripe "as of"
+  # their build date, so a build that is a month old is a page that is a month
+  # wrong. Rebuilding nightly keeps the crawlable HTML honest; the map page
+  # computes the same thing in the browser and is always current.
+  schedule:
+    - cron: '17 9 * 8,9,10,11 *'
 
 permissions:
   contents: read

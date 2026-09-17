@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEscape } from '@minormending/map-kit'
 import { OrchardMap, type MapApi } from './OrchardMap'
 import { OrchardDetail } from './OrchardDetail'
+import { SeasonBanner } from './SeasonBanner'
 import { FILTERS, EMPTY_FILTERS, applyFilters, distanceM, milesLabel, tagLabels, type FilterState } from '../lib/filters'
 import type { Orchard, Tag } from '../lib/types'
 
@@ -79,6 +80,7 @@ export function MapExplorer({ orchards, base }: Props) {
   return (
     <div className="explorer">
       <aside className={`panel ${listOpen ? 'panel-open' : ''}`}>
+        <SeasonBanner base={base} />
         <div className="panel-controls">
           <label className="search">
             <span className="visually-hidden">Search by name or town</span>

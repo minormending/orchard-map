@@ -406,3 +406,118 @@ a { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .panel { transition: none; }
 }
+
+/* --- season -------------------------------------------------------------- */
+
+.season {
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(to bottom, var(--surface-2), var(--surface));
+  flex: none;
+}
+
+.season-off p {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.season-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 0.5rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 0.6rem 0.85rem;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.season-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cider);
+  font-weight: 600;
+}
+
+.season-names {
+  font-size: 0.86rem;
+  line-height: 1.35;
+  grid-column: 1;
+}
+
+/* Column 2 explicitly: giving it only a grid-row lets auto-placement drop it
+   into column 1, ahead of the label. */
+.season-chevron { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--ink-2); }
+
+.season-body {
+  padding: 0 0.85rem 0.85rem;
+  font-size: 0.83rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.season-caveat {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.45;
+  border-left: 3px solid var(--cider);
+  padding-left: 0.6rem;
+}
+
+.season-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.25rem; }
+.season-when { color: var(--ink-2); }
+.season-ending { color: var(--apple); font-style: normal; font-weight: 500; }
+.season-soon { margin: 0; color: var(--ink-2); }
+
+/* --- variety calendar ---------------------------------------------------- */
+
+.cal { display: grid; gap: 0.35rem; margin: 1rem 0 1.5rem; }
+
+.cal-row {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.cal-name { font-weight: 500; }
+.cal-name small { display: block; font-weight: 400; color: var(--ink-2); font-size: 0.75rem; }
+
+.cal-track {
+  position: relative;
+  height: 0.85rem;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cal-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--cider);
+  border-radius: 999px;
+  opacity: 0.85;
+}
+
+.cal-bar-now { background: var(--apple); opacity: 1; }
+
+.cal-scale {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--ink-2);
+}
+
+.cal-months { display: flex; justify-content: space-between; }
+
+@media (max-width: 40rem) {
+  .cal-row, .cal-scale { grid-template-columns: 7rem 1fr; }
+}

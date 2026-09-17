@@ -1,0 +1,114 @@
+---
+import Base from '../layouts/Base.astro'
+import { VARIETIES, windowLabel, dayOfYear } from '../lib/season'
+
+/**
+ * The picking calendar, rendered statically.
+ *
+ * This page is deliberately timeless: it says when each apple is *usually*
+ * ready, which is true whenever somebody reads it. The "ripe right now"
+ * reading is done in the browser on the map page, because a static build
+ * freezes today at deploy day.
+ *
+ * It is also the page most likely to earn its keep in search — "when are
+ * honeycrisps ready in new york" is a real query with a real answer.
+ */
+const AUG_1 = dayOfYear(new Date(2025, 7, 1))
+const NOV_15 = dayOfYear(new Date(2025, 10, 15))
+const SPAN = NOV_15 - AUG_1
+
+const today = dayOfYear()
+
+const rows = VARIETIES
+  .filter((v) => v.start_doy !== null && v.end_doy !== null)
+  .map((v) => {
+    const left = ((v.start_doy! - AUG_1) / SPAN) * 100
+    const width = ((v.end_doy! - v.start_doy!) / SPAN) * 100
+    return {
+      ...v,
+      left: Math.max(0, left),
+      width: Math.max(2, Math.min(100 - Math.max(0, left), width)),
+      ripeToday: v.start_doy! <= today && today <= v.end_doy!,
+    }
+  })
+---
+<Base
+  title="When each apple is ripe in New York | Orchard Map"
+  description="A picking calendar for 30 apple varieties grown in New York — when Honeycrisp, McIntosh, Cortland, Macoun and the rest are usually ready in the Hudson Valley."
+>
+  <h1>The picking calendar</h1>
+  <p class="where">
+    When each variety is usually ready in the Hudson Valley, from the first
+    Jersey Macs in August to EverCrisp in November.
+  </p>
+
+  <div class="callout">
+    <p>
+      <strong>These are regional averages, not a report from any farm.</strong> A warm
+      spring pulls the whole calendar a week earlier and a cold one pushes it later,
+      and any given orchard sits a week either side of the region.
+    </p>
+    <p>
+      They are also <em>picking</em> windows, not shop availability. Several of these
+      apples are sold from cold storage into the spring — that does not mean there is
+      anything on the tree.
+    </p>
+  </div>
+
+  <div class="cal-scale">
+    <span></span>
+    <span class="cal-months">
+      <span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span>
+    </span>
+  </div>
+
+  <div class="cal">
+    {rows.map((v) => (
+      <div class="cal-row">
+        <span class="cal-name">
+          {v.name}
+          <small>{windowLabel(v)}</small>
+        </span>
+        <span class="cal-track" role="img" aria-label={`${v.name}: ${windowLabel(v)}`}>
+          <span
+            class:list={['cal-bar', v.ripeToday && 'cal-bar-now']}
+            style={`left:${v.left}%;width:${v.width}%`}
+          />
+        </span>
+      </div>
+    ))}
+  </div>
+
+  <h2>What they are good for</h2>
+  <table class="facts">
+    <tbody>
+      {VARIETIES.map((v) => (
+        <tr>
+          <th>{v.name}</th>
+          <td>
+            {v.best_for.length > 0
+              ? v.best_for.join('. ')
+              : <span class="unknown">Not described</span>}
+            {v.hint && <><br /><small class="muted">{v.hint}</small></>}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <h2>Where these came from</h2>
+  <p>
+    The variety names, flavour profiles and uses are the
+    <a href="https://www.applesfromny.com/" rel="noreferrer nofollow">New York Apple
+    Association</a>'s, which states no licence for them.
+  </p>
+  <p>
+    The picking windows are <strong>not</strong> theirs. The association publishes an
+    availability line — Braeburn reads "October through April" — which is when you can
+    buy the apple from controlled-atmosphere storage, not when you can pick it.
+    Treating that as a harvest window would have this page telling you to go and pick
+    Braeburns in March. The windows here are compiled separately from Cornell
+    Cooperative Extension harvest charts and orchards' own published calendars, and
+    are marked as estimates throughout.
+  </p>
+</Base>
