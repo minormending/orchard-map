@@ -77,7 +77,14 @@ test('provenance travels with every row', () => {
   // Two sources with genuinely different terms, which is the reason the
   // licence is a column rather than a line in a README: withdrawing one is a
   // filter, and nobody has to remember which rows came from where.
-  const LICENCES = { nyaa: 'unstated', osm: 'ODbL-1.0', user: 'user-submitted' }
+  const LICENCES = {
+    nyaa: 'unstated',
+    // Connecticut's apple marketing board states no licence either. Recorded
+    // the same way as New York's: as ambiguity, not as permission.
+    ctapples: 'unstated',
+    osm: 'ODbL-1.0',
+    user: 'user-submitted',
+  }
   for (const o of ORCHARDS) {
     assert.ok(o.import_source in LICENCES, `${o.name}: unknown source ${o.import_source}`)
     assert.ok(o.import_id, `${o.name} has no import id`)
@@ -98,10 +105,24 @@ test('OSM rows carry no guessed categories', () => {
 })
 
 test('coverage is honest about being uneven', () => {
-  // New York is thorough; everything else is OSM leftovers. If that ever
-  // inverts it is a bug in an importer, not good news.
+  // New York remains the bulk. Connecticut now has a real source of its own,
+  // so the ratio has moved — but if NY ever stops being the majority it means
+  // an importer has gone wrong, not that a state caught up overnight.
   const ny = ORCHARDS.filter((o) => o.state === 'NY').length
-  assert.ok(ny > ORCHARDS.length * 0.7, `NY is ${ny} of ${ORCHARDS.length}`)
+  assert.ok(ny > ORCHARDS.length * 0.6, `NY is ${ny} of ${ORCHARDS.length}`)
+})
+
+test('every state with real coverage has a source that can be named', () => {
+  // The point of the licence column: a state's rows should never be a mystery.
+  const bySource = new Map()
+  for (const o of ORCHARDS) {
+    const key = `${o.state}/${o.import_source}`
+    bySource.set(key, (bySource.get(key) ?? 0) + 1)
+  }
+  for (const [key, n] of bySource) {
+    const [, source] = key.split('/')
+    assert.ok(source, `${n} rows in ${key} have no source`)
+  }
 })
 
 test('websites are absolute https URLs when present', () => {
