@@ -91,13 +91,22 @@ declare
   r          record;
 begin
   for r in
-    -- The newest observation per (orchard, field). An older run's answer never
-    -- overwrites a newer one, whatever their confidences.
+    /*
+     * The newest observation per (orchard, field). An older run's answer never
+     * overwrites a newer one, whatever their confidences.
+     *
+     * Confidence is the tie-break, and it is not decorative. `created_at`
+     * defaults to now(), which in Postgres is TRANSACTION start time — so
+     * every observation written by one run carries an identical timestamp and
+     * `distinct on` was free to keep whichever it liked. A test caught it
+     * keeping a 0.35 heuristic guess over a 0.8 reading from the model tier,
+     * in the same run, for the same field.
+     */
     select distinct on (o.orchard_id, o.field)
            o.orchard_id, o.field, o.value, o.confidence, o.source_url, o.created_at
       from scrape_observations o
      where o.created_at > now() - interval '7 days'
-     order by o.orchard_id, o.field, o.created_at desc
+     order by o.orchard_id, o.field, o.created_at desc, o.confidence desc
   loop
     if r.confidence < p_min_confidence then
       v_skipped := v_skipped + 1;

@@ -1,10 +1,29 @@
 # The database
 
-**Status: written, not yet run.** There is no Supabase project for this yet, so
-every migration in `supabase/migrations/` is unapplied and unverified. They are
-committed because the schema is the design and the design is reviewable — but
-nobody should describe them as working until `pnpm db:migrate` has succeeded
-once against a real project. Expect to fix something on the first run.
+**Status: verified against Postgres, not yet applied to a Supabase project.**
+
+Every migration applies cleanly from a clean database, the seed loads, and 22
+behaviour tests pass — against Postgres 15 + PostGIS 3.4 in a container, with a
+shim supplying the parts of a Supabase project the migrations assume (`auth.uid()`,
+`auth.users`, the `anon`/`authenticated` roles, `extensions.pgcrypto`).
+
+```bash
+pnpm db:verify      # container -> migrations -> seed -> behaviour tests
+```
+
+What remains unproven is the Supabase-specific layer: PostgREST exposing the
+`submit_*` functions by argument name, the real signup trigger on `auth.users`,
+and Google OAuth. Those need a project.
+
+**Verification earned its place immediately.** The first run found four real
+faults, every one of which would otherwise have surfaced on a live project:
+
+| | |
+| --- | --- |
+| `orchards_import_key` was a **partial** unique index | `ON CONFLICT (cols)` cannot use one unless the statement repeats the predicate, so every upsert in the seed failed. The predicate bought nothing — unique indexes already treat NULLs as distinct. |
+| `trouble_reporters_90d` counted `closed` as well as `gone` | The exact opposite of what `apply_auto_hide`'s comment promised. Six people reporting a farm shut on a wet Tuesday pushed the score past -6 and the count past 4, so the next single `gone` report hid the farm outright. |
+| `promote_observations` broke ties arbitrarily | `created_at` defaults to `now()`, which is **transaction** start time, so every observation from one crawl shares a timestamp. `distinct on` was free to keep a 0.35 regex guess over a 0.8 model reading of the same field. Confidence is now the tie-break. |
+| the verification harness itself raced the image's init | The PostGIS image creates the extension on a socket-only server and accepts queries throughout, so a naive readiness poll ran `create extension postgis` concurrently with its own and killed the container. |
 
 The site does not need any of this. Phase 1 shipped with no database at all,
 and `HAS_DB` is false without credentials, which hides every affordance that
@@ -12,7 +31,11 @@ would need one rather than showing a button that silently fails.
 
 ## Getting it running
 
-1. Create a Supabase project.
+1. Create a Supabase project. **Do not reuse restroom-map's** — it already has
+   `profiles`, `flags`, `feedback`, `rate_limit` and `reports`, and these
+   migrations would collide with all five. `revoke all on profiles` and
+   `alter default privileges ... revoke` in particular would reach straight
+   into a live app.
 2. Put the URL, the anon key and the database password in `.env`
    (see `.env.example`). `.env` is gitignored and must stay that way — the
    database password bypasses RLS entirely.
@@ -40,6 +63,7 @@ node scripts/db.mjs file supabase/seed.sql
 | `…005_reports` | reports, confidence with decay, auto-hide, `submit_report` |
 | `…006_grants` | who may write what |
 | `…007_submissions` | `submit_orchard`, visitor claims, the two-people rule |
+| `…008_scraping` | scrape runs, observations, `promote_observations` |
 
 The first two and the fourth are generated from `map-kit` templates by
 `scripts/gen-migration.mjs` and then committed as plain SQL. They are written
@@ -104,3 +128,9 @@ there and neither checked the thing that mattered.
 `42501`. Assert the *message* — `permission denied for table` is the grant,
 `violates row-level security policy` is the policy. A test asserting only the
 code passes against the broken schema.
+
+And a permission test must actually `set local role anon`. Setting the JWT
+claim alone leaves the connection as the owner, which bypasses grants and RLS
+entirely — such a test passes no matter what the schema says. `asRole()` in
+`scripts/test-schema.mjs` does the former; `become()` does only the latter and
+is for identity, not permissions.

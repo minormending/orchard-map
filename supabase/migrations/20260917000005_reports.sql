@@ -62,9 +62,16 @@ select
   count(*) filter (where r.kind = 'open'   and r.created_at > now() - interval '90 days') as confirms_90d,
   count(*) filter (where r.kind <> 'open'  and r.created_at > now() - interval '90 days') as troubles_90d,
   -- Distinct PEOPLE, not reports. One person with a grudge and a browser
-  -- toggle is two addresses; three separate people is a signal.
+  -- toggle is two addresses; several separate people is a signal.
+  --
+  -- ONLY 'gone'. This counted 'closed' too until a test caught it, and the
+  -- effect was the opposite of what the comment on apply_auto_hide promised:
+  -- six people reporting a farm closed on a wet Tuesday pushed the score past
+  -- -6 and the reporter count past 4, so the very first 'gone' report hid a
+  -- farm outright. "Closed today" and "gone for good" are different claims and
+  -- only the second one is about whether the place exists.
   count(distinct coalesce(r.user_id::text, r.anon_id))
-    filter (where r.kind in ('closed', 'gone') and r.created_at > now() - interval '90 days')
+    filter (where r.kind = 'gone' and r.created_at > now() - interval '90 days')
     as trouble_reporters_90d,
   max(r.created_at) filter (where r.kind = 'open') as last_confirmed_at,
   coalesce(sum(

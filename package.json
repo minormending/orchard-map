@@ -13,7 +13,9 @@
     "db:status": "node scripts/db.mjs status",
     "db:migrate": "node scripts/db.mjs migrate",
     "db:query": "node scripts/db.mjs query",
-    "db:queue": "node scripts/db.mjs queue"
+    "db:queue": "node scripts/db.mjs queue",
+    "test:schema": "node scripts/test-schema.mjs",
+    "db:verify": "bash scripts/verify-schema.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
@@ -30,8 +32,10 @@
     "@astrojs/check": "^0.9.10",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.13.3",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "pg": "^8.23.0",
     "typescript": "~5.7.3"
   }
 }

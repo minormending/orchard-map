@@ -83,8 +83,20 @@ create table orchards (
   updated_at timestamptz not null default now()
 );
 
-create unique index orchards_import_key on orchards (import_source, import_id)
-  where import_source is not null;
+/*
+ * Not a partial index, and that is load-bearing.
+ *
+ * This started as `... where import_source is not null`, which looks tidier
+ * and quietly breaks the seed loader: `ON CONFLICT (cols)` cannot use a
+ * partial index unless the statement repeats the predicate, so every upsert
+ * failed with "no unique or exclusion constraint matching the ON CONFLICT
+ * specification". Found by running it.
+ *
+ * The predicate bought nothing anyway. Unique indexes treat NULLs as distinct,
+ * so user-submitted rows — which carry import_source 'user' and no import_id —
+ * do not collide with each other regardless.
+ */
+create unique index orchards_import_key on orchards (import_source, import_id);
 create index orchards_geog on orchards using gist (geog);
 create index orchards_live on orchards (status) where status = 'active';
 create index orchards_tags on orchards using gin (tags);
