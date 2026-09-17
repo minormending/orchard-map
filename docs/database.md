@@ -47,7 +47,25 @@ node scripts/seed-to-sql.mjs > supabase/seed.sql
 node scripts/db.mjs file supabase/seed.sql
 ```
 
-4. Enable Google in Authentication → Providers.
+4. Point Auth at the site and switch Google on:
+
+```bash
+node scripts/configure-auth.mjs            # shows current vs intended
+node scripts/configure-auth.mjs --apply
+```
+
+   A fresh project ships with `site_url` set to `http://localhost:3000`, which
+   is wrong for every deployed site and will bounce somebody to a dead address
+   after they sign in — worth fixing whether or not Google is ready. The
+   redirect allow list is a wildcard over the whole site, because sign-in
+   returns to the page it started from and that can be any of the 199 orchard
+   pages.
+
+   The Google OAuth client itself has to be made by hand in Google Cloud
+   Console: it is an interactive login against a Google account, there is no
+   API for the consent screen, and there should not be one for handing out an
+   account's OAuth credentials. The script prints the exact origins and
+   redirect URI to paste in.
 5. Add `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` as **repository
    variables** (not secrets — the anon key belongs in the bundle) so the
    deployed build picks them up.
