@@ -62,9 +62,8 @@ not first because measured across this region:
 OSM is a good source of orchard *polygons* and a poor source of orchard
 *facts*. It stays as a cross-reference, not a roster.
 
-The association states no licence. That is ambiguity rather than permission, so
-every row records `import_source`, `import_id` and `import_licence` —
-withdrawing the source is one filter rather than an archaeology project.
+Every row records `import_source`, `import_id` and `import_licence`, so
+withdrawing a source is one filter rather than an archaeology project.
 
 ```bash
 node scripts/import-nyaa.mjs            # dry run, says what it would write
@@ -123,11 +122,18 @@ says, in as many words, that its hours have not been checked.
 pnpm test
 ```
 
-Two suites, both guarding things that would otherwise fail silently: the filter
-rules (tags **AND** rather than OR — OR makes every extra tick return *more*
-results, which is the opposite of what a filter is for), and the integrity of
-the generated dataset (unique slugs, positions inside the box, known tags,
-provenance on every row).
+Forty tests across four suites, all guarding things that would otherwise fail
+silently:
+
+- **filters** — tags **AND** rather than OR. OR makes every extra tick return
+  *more* results, which is the opposite of what a filter is for.
+- **data** — unique slugs, positions inside the box, known tags, the right
+  licence per source, and no inferred categories on OSM rows.
+- **season** — nothing ripe in March, no picking window longer than 95 days.
+  Both exist to catch the association's *retail availability* figure leaking
+  into a *picking* window; Braeburn's reads "October through April".
+- **extract** — the three ways the scraper has already been wrong, each a real
+  page fragment rather than a hypothetical.
 
 ## Build and deploy
 
@@ -141,6 +147,19 @@ because it looks like one and never changes.
 
 ## Where this is going
 
-See [SPEC.md](SPEC.md). Phase 1 — this — is the read-only map. Then seasons and
-varieties, then accounts and moderation, then a scraper that reads the farms'
-own sites, then the states beyond New York.
+[SPEC.md](SPEC.md) has the five phases. All five are written; what separates
+them now is how much of each has actually *run*.
+
+| | |
+| --- | --- |
+| 1 · the map | **live** |
+| 2 · seasons and varieties | **live** |
+| 2b–3 · reports, accounts, moderation | schema written, **never applied** |
+| 4 · the scraper | runs; its output has nowhere to go until the database exists |
+| 5 · beyond New York | ten OSM rows in; CT and PA directories not done |
+
+The gap is one thing: **there is no Supabase project yet**, so every migration
+in `supabase/migrations/` is unapplied and unverified. See
+[docs/database.md](docs/database.md). The site does not need it — `HAS_DB` is
+false without credentials and every affordance that would need one renders
+nothing at all, rather than offering a button that silently fails.
