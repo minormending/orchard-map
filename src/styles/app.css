@@ -521,3 +521,19 @@ a { color: var(--accent); }
 @media (max-width: 40rem) {
   .cal-row, .cal-scale { grid-template-columns: 7rem 1fr; }
 }
+
+/* --- reporting ----------------------------------------------------------- */
+
+.report-open { display: block; margin-bottom: 0.7rem; }
+.report { margin-bottom: 0.8rem; }
+.report-q { margin: 0 0 0.4rem; font-size: 0.85rem; font-weight: 500; }
+.report-options { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.5rem; }
+.report-options .chip { font-size: 0.78rem; }
+.report-options .chip:disabled { opacity: 0.6; cursor: default; }
+.report-note { margin: 0; font-size: 0.74rem; color: var(--ink-2); line-height: 1.4; }
+.report-said {
+  margin: 0 0 0.8rem;
+  font-size: 0.82rem;
+  color: var(--leaf);
+  font-weight: 500;
+}

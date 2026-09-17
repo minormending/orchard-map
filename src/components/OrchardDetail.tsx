@@ -1,4 +1,5 @@
 import { tagLabels } from '../lib/filters'
+import { ReportBox } from './ReportBox'
 import { addressLine, directionsUrl, orchardUrl, telUrl } from '../lib/orchards'
 import type { Orchard } from '../lib/types'
 
@@ -6,10 +7,11 @@ interface Props {
   orchard: Orchard
   base: string
   distance: string | null
+  position: { lat: number; lng: number } | null
   onClose: () => void
 }
 
-export function OrchardDetail({ orchard, base, distance, onClose }: Props) {
+export function OrchardDetail({ orchard, base, distance, position, onClose }: Props) {
   const tags = tagLabels(orchard)
   const where = addressLine(orchard)
 
@@ -68,6 +70,8 @@ export function OrchardDetail({ orchard, base, distance, onClose }: Props) {
         Hours and whether picking is open <strong>have not been checked</strong>.
         {orchard.website ? ' Ring ahead or check their site before driving.' : ' Ring ahead before driving.'}
       </p>
+
+      <ReportBox orchard={orchard} position={position} />
 
       <a className="sheet-more" href={orchardUrl(base, orchard.slug)}>
         Everything we know about {orchard.name} →

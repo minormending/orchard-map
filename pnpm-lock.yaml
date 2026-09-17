@@ -16,7 +16,7 @@ importers:
         version: 3.7.4
       '@minormending/map-kit':
         specifier: github:minormending/map-kit
-        version: https://codeload.github.com/minormending/map-kit/tar.gz/91ed1ffef7186729edcf7ffe4df150d138b8f961(react@19.3.0)
+        version: https://codeload.github.com/minormending/map-kit/tar.gz/4d3f6681ea094122c365da901d4c6921200c120d(react@19.3.0)
       astro:
         specifier: ^5.5.0
         version: 5.18.2(@types/node@24.13.5)(rollup@4.63.3)(typescript@5.7.3)(yaml@2.9.1)
@@ -723,8 +723,8 @@ packages:
   '@maplibre/vt-pbf@4.3.2':
     resolution: {integrity: sha512-j6p0AdjvAR19Z3XaCysle7A4ZSo08tYOzxD0Y9NQylwPAkwJJeYub5b2eVucdeDh7erhv69DahoLOevDRERRUw==}
 
-  '@minormending/map-kit@https://codeload.github.com/minormending/map-kit/tar.gz/91ed1ffef7186729edcf7ffe4df150d138b8f961':
-    resolution: {tarball: https://codeload.github.com/minormending/map-kit/tar.gz/91ed1ffef7186729edcf7ffe4df150d138b8f961}
+  '@minormending/map-kit@https://codeload.github.com/minormending/map-kit/tar.gz/4d3f6681ea094122c365da901d4c6921200c120d':
+    resolution: {tarball: https://codeload.github.com/minormending/map-kit/tar.gz/4d3f6681ea094122c365da901d4c6921200c120d}
     version: 0.1.0
     peerDependencies:
       react: '>=18'
@@ -2987,7 +2987,7 @@ snapshots:
       '@types/geojson': 7946.0.16
       pbf: 5.1.2
 
-  '@minormending/map-kit@https://codeload.github.com/minormending/map-kit/tar.gz/91ed1ffef7186729edcf7ffe4df150d138b8f961(react@19.3.0)':
+  '@minormending/map-kit@https://codeload.github.com/minormending/map-kit/tar.gz/4d3f6681ea094122c365da901d4c6921200c120d(react@19.3.0)':
     dependencies:
       '@supabase/supabase-js': 2.116.0
       pg: 8.23.0

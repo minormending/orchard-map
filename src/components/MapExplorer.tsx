@@ -167,6 +167,7 @@ export function MapExplorer({ orchards, base }: Props) {
             base={base}
             onClose={() => setSelected(null)}
             distance={here ? milesLabel(distanceM(here, chosen)) : null}
+            position={here}
           />
         )}
       </div>
