@@ -106,6 +106,34 @@ a loading state.
 So every orchard gets a real static page, and the map is the tool people use
 once they arrive.
 
+## Who reads the farms' websites
+
+The crawl is deterministic code; the judgment is a scheduled Claude session.
+That split is the security boundary, not a convenience.
+
+`scripts/scrape.mjs --queue` does every network-facing thing — robots.txt,
+crawl delays, one request per host, conditional requests — and settles what it
+can with structured data and regexes. What it cannot settle, it writes to
+`scripts/.queue/` as page **text**.
+
+A daily task then reads those files and decides. It exists because a pattern
+match has no idea what day it is: Altamont Orchards, read on 17 September, said
+*"PICK YOUR OWN APPLES : Open on September 12 & 13th"* — a true sentence about
+a finished weekend. Reading that as "open" is the two-hour wasted drive this
+project is built to prevent, which is why regex open-claims score below the
+promotion threshold and a reader makes the call.
+
+The reader **never fetches anything**. It reads files already on disk, so a
+page cannot make it follow a link — following links is not a capability it
+has. It **never writes SQL**: its only write path is
+`scripts/record-observations.mjs`, which validates every field against the
+same closed vocabularies the schema uses and refuses the rest. And it **never
+promotes**; recording an observation is not changing the map.
+
+The instructions live in `.claude/skills/read-farm-sites/SKILL.md`, versioned
+with the code they act on, so they change in the same commit as the schema
+they depend on.
+
 ## The rule that governs the schema
 
 > **`null` means nobody has said. It does not mean no.**
@@ -182,7 +210,7 @@ them now is how much of each has actually *run*.
 | 1 · the map | **live** |
 | 2 · seasons and varieties | **live** |
 | 2b–3 · reports, accounts, moderation | schema written, **never applied** |
-| 4 · the scraper | runs; its output has nowhere to go until the database exists |
+| 4 · the scraper | runs nightly through the season; a scheduled session reads what a regex cannot |
 | 5 · beyond New York | ten OSM rows in; CT and PA directories not done |
 
 The gap is one thing: **there is no Supabase project yet**, so every migration

@@ -10,11 +10,12 @@ on:
         description: 'Use the model tier'
         type: boolean
         default: false
-  # Through the season only. Nightly, at an unremarkable hour, and deliberately
-  # not on the hour: a few hundred small farm sites do not need a thundering
-  # herd arriving at midnight with everything else on the internet.
-  schedule:
-    - cron: '43 7 * 8,9,10,11 *'
+  # No schedule any more. The nightly crawl moved to a scheduled Claude session
+  # (see .claude/skills/read-farm-sites/SKILL.md), because the judgment half of
+  # the job needs a reader and running BOTH on a cron would mean two
+  # independent crawlers arriving at the same few hundred small farm sites —
+  # precisely the bad-neighbour behaviour the polite fetcher exists to prevent.
+  # This workflow stays for manual, heuristics-only runs.
 
 # One crawl at a time, ever. Two concurrent runs would double every host's
 # request rate and defeat the per-host serialisation in the fetcher.
@@ -53,7 +54,7 @@ jobs:
         run: |
           node scripts/scrape.mjs \
             --limit "${{ inputs.limit || 0 }}" \
-            ${{ (inputs.model || github.event_name == 'schedule') && '--model' || '' }} \
+            ${{ inputs.model && '--model' || '' }} \
             --out observations.json
 
       # Observations are not facts. They are uploaded for a person to read

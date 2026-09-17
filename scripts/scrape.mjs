@@ -18,6 +18,18 @@
  * honoured, one request per host at a time, conditional requests, and a host
  * that fails twice is parked. These are small businesses on shared hosting and
  * the crawler has to be invisible to them.
+ *
+ * `--queue` writes the pages that still need a reader into scripts/.queue/, one
+ * file per farm, for the scheduled session described in
+ * .claude/skills/read-farm-sites/SKILL.md to work through.
+ *
+ * That split is the security boundary, not just a convenience. ALL the
+ * network-facing work stays here, in deterministic code where politeness is
+ * enforceable and testable. The session that reads the text has Bash and a
+ * database connection, and it is reading arbitrary third-party HTML — so it
+ * must never be the thing that decides to fetch something. It reads files that
+ * are already on disk. A page cannot make it follow a link, because following
+ * links is not a capability it has.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -42,6 +54,7 @@ const USE_MODEL = flag('model')
 const OUT = value('out', null)
 const AS_SQL = flag('sql')
 const ONLY = value('only', null)
+const QUEUE = flag('queue')
 
 /**
  * The kill switch.
@@ -81,6 +94,7 @@ const fetcher = new PoliteFetcher({
 
 const runs = []
 const observations = []
+const queued = []
 let modelCalls = 0
 let tokensUsed = 0
 
@@ -153,7 +167,7 @@ for (const orchard of targets) {
    * that matters, and only on the page most likely to answer it. Spending a
    * model call to confirm something a regex already found is money for nothing.
    */
-  const haveOpen = found.some((o) => o.field === 'upick_open')
+  const haveOpen = found.some((o) => o.field === 'upick_open' && o.confidence >= 0.55)
   const haveHours = found.some((o) => o.field === 'hours')
 
   if (USE_MODEL && modelTierAvailable() && (!haveOpen || !haveHours)) {
@@ -212,10 +226,62 @@ for (const orchard of targets) {
     (varietyCount ? ` · ${varietyCount} varieties` : '') + '\n',
   )
 
+  /*
+   * Anything the cheap tiers could not settle goes to a reader.
+   *
+   * `upick_open` is the field this exists for: a regex cannot tell a current
+   * announcement from a three-day-old one, which is why its open claims are
+   * scored below the promotion threshold and why `haveOpen` above requires a
+   * promotable one rather than merely any.
+   */
+  if (QUEUE && (!haveOpen || !haveHours)) {
+    queued.push({
+      slug: orchard.slug,
+      name: orchard.name,
+      town: orchard.town,
+      state: orchard.state,
+      orchard_id: orchard.id,
+      queued_at: new Date().toISOString(),
+      missing: [!haveOpen && 'upick_open', !haveHours && 'hours'].filter(Boolean),
+      // Text, never HTML. The reader has no use for markup and it is a third
+      // of the tokens.
+      pages: pages.map((p) => ({ url: p.url, text: pageText(p.html).slice(0, 12_000) })),
+    })
+  }
+
   runs.push({ ...run, finished_at: new Date().toISOString() })
 }
 
 writeFileSync(ETAGS, JSON.stringify(Object.fromEntries(etagStore)))
+
+if (QUEUE) {
+  const dir = join(CACHE, '..', '.queue')
+  mkdirSync(dir, { recursive: true })
+  /*
+   * Pick-your-own farms first, because they are what people came for and what
+   * changes week to week. A farm shop's hours move far less than whether the
+   * trees have anything left on them.
+   */
+  const priority = (q) => {
+    const o = orchards.find((x) => x.slug === q.slug)
+    return o?.tags.includes('pick_your_own') ? 0 : 1
+  }
+  queued.sort((a, b) => priority(a) - priority(b) || a.slug.localeCompare(b.slug))
+  /*
+   * The priority is in the FILENAME, not just the sort order here.
+   *
+   * Sorting an array and then writing one file per entry loses the ordering
+   * entirely — `ls` is alphabetical and does not care what order the files
+   * were created in. The reader's instructions say to work through them in the
+   * order `ls` gives, so the prefix is what makes that instruction true rather
+   * than merely plausible.
+   */
+  for (const q of queued) {
+    const rank = priority(q) === 0 ? 'a-upick' : 'b-other'
+    writeFileSync(join(dir, `${rank}-${q.slug}.json`), JSON.stringify(q, null, 2) + '\n')
+  }
+  process.stderr.write(`queued ${queued.length} farms for a reader in scripts/.queue/\n`)
+}
 
 // --- output -----------------------------------------------------------------
 
