@@ -10,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Same as deploy.yml, and for the same reason: the build stamps a
+          # version counted from the commit history, and a shallow clone makes
+          # that number 1. astro.config.mjs refuses to build on a count of 1 in
+          # CI rather than shipping a version tag that never changes — so CI
+          # has to check out the same way the deploy does, or it is not testing
+          # the same build.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 9
