@@ -1,0 +1,343 @@
+/**
+ * Getting facts out of a farm's website.
+ *
+ * Three tiers, tried in order, and the ordering is evidence-based rather than
+ * aesthetic. Sampling orchard sites while scoping this project found:
+ *
+ *   maskers.com        157KB, JSON-LD Place + PostalAddress, no openingHours
+ *   hurdsfamilyfarm    1.4MB, JSON-LD LocalBusiness,         no openingHours
+ *   duboisfarms.com    5KB of shell, everything rendered in JS
+ *
+ * So tier 1 is nearly free and answers address and phone, which we already
+ * have. It does NOT answer the one thing that matters — whether picking is on
+ * today — because not one sampled site publishes that machine-readably. That
+ * is the entire justification for tier 3 existing.
+ *
+ * Every extractor returns observations, never values. An observation carries
+ * its source URL, the sentence it came from, and a confidence, so a wrong
+ * promotion can be explained rather than appearing as a number nobody can
+ * account for.
+ */
+
+/** Strip a page to readable text, dropping the parts that lie. */
+export function pageText(html) {
+  return String(html ?? '')
+    // Script and style content is not prose and is full of false positives:
+    // a variety name in a JSON blob is not the farm saying they grow it.
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/[ \t ]+/g, ' ')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    .trim()
+}
+
+/** Every JSON-LD block on the page, flattened, bad JSON skipped. */
+export function jsonLd(html) {
+  const out = []
+  const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+  let m
+  while ((m = re.exec(String(html ?? ''))) !== null) {
+    try {
+      const parsed = JSON.parse(m[1].trim())
+      const items = Array.isArray(parsed) ? parsed : [parsed]
+      for (const item of items) {
+        if (item && typeof item === 'object') {
+          out.push(item)
+          if (Array.isArray(item['@graph'])) out.push(...item['@graph'])
+        }
+      }
+    } catch {
+      // A broken block is common and is not worth failing a crawl over.
+    }
+  }
+  return out
+}
+
+const obs = (field, value, tier, confidence, url, evidence) => ({
+  field, value: String(value), tier, confidence, source_url: url,
+  evidence: evidence ? evidence.slice(0, 300) : null,
+})
+
+// --- tier 1: structured data ------------------------------------------------
+
+export function extractStructured(html, url) {
+  const found = []
+  for (const node of jsonLd(html)) {
+    const hours = node.openingHours ?? node.openingHoursSpecification
+    if (hours) {
+      const text = Array.isArray(hours)
+        ? hours.map((h) => (typeof h === 'string' ? h : formatSpec(h))).filter(Boolean).join('; ')
+        : typeof hours === 'string' ? hours : formatSpec(hours)
+      if (text) {
+        // The operator published this in machine-readable form. Nothing else
+        // in this file gets to be this confident.
+        found.push(obs('hours', text, 'structured', 0.95, url, text))
+      }
+    }
+  }
+  return found
+}
+
+function formatSpec(spec) {
+  if (!spec || typeof spec !== 'object') return null
+  const days = [].concat(spec.dayOfWeek ?? []).map((d) => String(d).split('/').pop()).join(',')
+  const open = spec.opens
+  const close = spec.closes
+  if (!open || !close) return null
+  return `${days || 'Daily'} ${open}-${close}`
+}
+
+// --- tier 2: heuristics -----------------------------------------------------
+
+/**
+ * Is picking on?
+ *
+ * The asymmetry here is deliberate and matters more than the patterns. A false
+ * "open" sends somebody on a two-hour drive; a false "closed" costs them a
+ * farm they could have visited. So the closed patterns are checked FIRST and
+ * carry higher confidence, and an ambiguous page yields nothing rather than a
+ * cheerful guess.
+ *
+ * The open case is deliberately scored BELOW the default promotion threshold,
+ * so a regex alone can never put "picking is open" on the map. That is not
+ * caution for its own sake — the first real run produced this, from Altamont
+ * Orchards on 17 September:
+ *
+ *     "PICK YOUR OWN APPLES : Open on September 12 & 13th 10 AM to 4PM"
+ *
+ * which is a true sentence about a weekend that had already passed. A pattern
+ * match has no idea what day it is, and no amount of pattern-tuning gives it
+ * one. Reading a date against today is a judgment, so asserting "open" is left
+ * to the model tier, which is given the date and asked to make it. Closed
+ * claims stay promotable: they are rarely time-limited in the same way, and
+ * being wrong about them is the cheap direction.
+ */
+const CLOSED_PATTERNS = [
+  /\bu-?pick\b[^.!?\n]{0,40}\b(is\s+)?(now\s+)?clos(ed|ing)\b/i,
+  /\b(picking|u-?pick)\b[^.!?\n]{0,40}\bdone for (the|this) (season|year)\b/i,
+  /\bno (more )?(u-?pick|picking)\b/i,
+  /\bwe are (now )?clos(ed|ing) for the season\b/i,
+  /\bpicked out\b/i,
+  /\bsold out of (apples|u-?pick)\b/i,
+]
+
+const OPEN_PATTERNS = [
+  /\bu-?pick\b[^.!?\n]{0,40}\b(is\s+)?(now\s+)?open\b/i,
+  /\b(now )?pick(ing)?\s+(your own\s+)?apples?\b[^.!?\n]{0,30}\b(open|now|today|daily)\b/i,
+  /\bapple picking is open\b/i,
+  /\bopen (daily|weekends|every day)\b[^.!?\n]{0,30}\b(pick|apple)/i,
+]
+
+export function extractUpickOpen(text, url) {
+  for (const re of CLOSED_PATTERNS) {
+    const m = re.exec(text)
+    if (m) return [obs('upick_open', 'false', 'heuristic', 0.75, url, sentenceAround(text, m.index))]
+  }
+  for (const re of OPEN_PATTERNS) {
+    const m = re.exec(text)
+    // 0.35 is below the promotion threshold on purpose. The observation is
+    // recorded — it is real, and a moderator may want it — but it cannot
+    // become a fact without the model tier corroborating it.
+    if (m) return [obs('upick_open', 'true', 'heuristic', 0.35, url, sentenceAround(text, m.index))]
+  }
+  return []
+}
+
+/**
+ * Spellings farms actually use.
+ *
+ * Maskers writes "Macintosh"; the association writes "McIntosh". Without this
+ * the single most-grown apple in New York is invisible to the scraper, which
+ * was found by running it rather than by thinking about it. Aliases must stay
+ * specific enough not to collide: "Mac" alone would match "Macoun".
+ */
+const ALIASES = {
+  mcintosh: ['Macintosh', 'Mac Intosh'],
+  crispin: ['Mutsu'],
+  'golden-delicious': ['Golden Del'],
+  'red-delicious': ['Red Del'],
+  'granny-smith': ['Granny'],
+  evercrisp: ['Ever Crisp'],
+  snapdragon: ['Snap Dragon'],
+  zestar: ['Zestar'],
+  sweetango: ['Sweet Tango', 'SweetTango'],
+  rubyfrost: ['Ruby Frost'],
+  wildtwist: ['Wild Twist'],
+  '20-ounce': ['Twenty Ounce'],
+  jonamac: ['Jona Mac'],
+  'acey-mac': ['Acey'],
+}
+
+/**
+ * Which varieties the page mentions.
+ *
+ * Matched against the known vocabulary rather than guessed, so a page cannot
+ * invent an apple. Word-boundary anchored, because "Gala" appears inside
+ * "Galaxy" and "Rome" inside "Romeo" — and a farm shop page mentioning a Rome
+ * apple is a very different thing from a page about a wedding venue in Rome.
+ */
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/**
+ * Sentences where naming an apple does not mean growing it.
+ *
+ * Found by running the scraper rather than by imagining it. Maskers' ripening
+ * schedule describes Empire as "cross between a Macintosh and Red Delicious",
+ * and Jonagold as a "cross between Golden Delicious and Jonathan". Both are
+ * parentage. Taking them at face value would have the map claiming two
+ * varieties this farm may well not grow.
+ *
+ * These are demoted rather than dropped, which is the point of storing
+ * observations rather than values: the sighting is real and worth keeping, it
+ * just must not clear the promotion threshold on its own.
+ *
+ * Position matters. In "Empire — cross between a Macintosh and Red Delicious",
+ * Empire is the subject and IS grown here; Macintosh and Red Delicious are the
+ * parents and may not be. So only a match occurring AFTER the parentage phrase
+ * is demoted. Demoting the whole sentence loses the one variety it was
+ * actually about — which the first version of this did.
+ */
+const PARENTAGE = /\b(cross(ed)? (between|with)|hybrid|parent|seedling of|descend|similar to|cousin|related to|instead of|rather than)\b/i
+
+export function extractVarieties(text, url, vocabulary) {
+  const found = []
+  for (const v of vocabulary) {
+    // Drop trademark marks and punctuation the page will not have.
+    const names = [v.name.replace(/[®™!]/g, '').trim(), ...(ALIASES[v.slug] ?? [])]
+    for (const name of names) {
+      if (name.length < 4) continue
+      const re = new RegExp(`\\b${escapeRe(name)}\\b`, 'i')
+      const m = re.exec(text)
+      if (m) {
+        const lineFrom = Math.max(0, text.lastIndexOf('\n', m.index) + 1)
+        const evidence = sentenceAround(text, m.index)
+        const offset = m.index - lineFrom
+        const parentage = PARENTAGE.exec(evidence)
+        const confidence = parentage && offset > parentage.index ? 0.25 : 0.7
+        found.push(obs('variety', v.slug, 'heuristic', confidence, url, evidence))
+        break
+      }
+    }
+  }
+  return found
+}
+
+/** Admission and u-pick pricing, when the page states one plainly. */
+const PRICE_PATTERNS = [
+  /\$\s?\d+(?:\.\d{2})?\s*(?:per|\/)\s*(?:person|adult|car|vehicle|bag|peck|half[- ]peck)/i,
+  /\b(?:admission|entry|entrance)\b[^.!?\n]{0,30}\$\s?\d+(?:\.\d{2})?/i,
+  /\bfree admission\b/i,
+]
+
+export function extractAdmission(text, url) {
+  for (const re of PRICE_PATTERNS) {
+    const m = re.exec(text)
+    if (m) {
+      return [obs('admission', m[0].trim(), 'heuristic', 0.6, url, sentenceAround(text, m.index))]
+    }
+  }
+  return []
+}
+
+const RESERVATION_PATTERNS = [
+  /\b(timed\s+)?(tickets?|reservations?)\s+(are\s+)?required\b/i,
+  /\bmust (be )?(purchase|buy|reserve|book)\b[^.!?\n]{0,30}\b(ticket|reservation)/i,
+  /\badvance (tickets?|reservations?)\b[^.!?\n]{0,20}\brequired\b/i,
+]
+
+export function extractReservations(text, url) {
+  for (const re of RESERVATION_PATTERNS) {
+    const m = re.exec(text)
+    if (m) {
+      return [obs('reservations_required', 'true', 'heuristic', 0.65, url, sentenceAround(text, m.index))]
+    }
+  }
+  return []
+}
+
+/** The sentence a match sits in, for a human reviewing the promotion. */
+export function sentenceAround(text, index) {
+  const from = Math.max(0, text.lastIndexOf('\n', index) + 1)
+  const stop = text.indexOf('\n', index)
+  const to = stop === -1 ? Math.min(text.length, index + 200) : stop
+  return text.slice(from, to).trim()
+}
+
+/**
+ * Everything tier 1 and 2 can find on one page.
+ *
+ * Deliberately returns an empty array rather than nulls or placeholders: an
+ * absent observation and an observation of "we do not know" are different
+ * things, and only the first is honest.
+ */
+export function extractAll(html, url, vocabulary) {
+  const text = pageText(html)
+  return [
+    ...extractStructured(html, url),
+    ...extractUpickOpen(text, url),
+    ...extractAdmission(text, url),
+    ...extractReservations(text, url),
+    ...extractVarieties(text, url, vocabulary),
+  ]
+}
+
+/**
+ * Which pages on a farm's site are worth the fetch budget.
+ *
+ * Six pages per host, so they have to be the right six. Scored by what the
+ * link says rather than crawled breadth-first, because the answer is almost
+ * always behind a link that says "u-pick" or "visit" and almost never four
+ * levels down.
+ */
+const LINK_SCORES = [
+  [/u-?pick|pick.your.own|picking/i, 10],
+  [/hours|open|visit|plan.your/i, 8],
+  [/apple|orchard|variet|crop/i, 6],
+  [/admission|ticket|price|rates/i, 5],
+  [/farm.stand|market|store|shop/i, 3],
+  [/news|update|blog/i, 2],
+]
+
+export function rankLinks(html, baseUrl, limit = 5) {
+  const scored = new Map()
+  const re = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi
+  let m
+  while ((m = re.exec(String(html ?? ''))) !== null) {
+    let href
+    try {
+      href = new URL(m[1], baseUrl)
+    } catch {
+      continue
+    }
+    // Same host only. A farm's Facebook page is not the farm's website, and
+    // following off-site links is how a crawler becomes somebody else's problem.
+    if (href.host !== new URL(baseUrl).host) continue
+    if (!/^https?:$/.test(href.protocol)) continue
+    href.hash = ''
+
+    const label = `${m[2].replace(/<[^>]+>/g, ' ')} ${href.pathname}`
+    let score = 0
+    for (const [pattern, points] of LINK_SCORES) {
+      if (pattern.test(label)) score += points
+    }
+    if (score === 0) continue
+
+    const key = href.href
+    if (!scored.has(key) || scored.get(key) < score) scored.set(key, score)
+  }
+
+  return [...scored.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([url]) => url)
+}

@@ -1,0 +1,65 @@
+name: Scrape farm websites
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'How many farms to crawl (0 = all)'
+        default: '25'
+      model:
+        description: 'Use the model tier'
+        type: boolean
+        default: false
+  # Through the season only. Nightly, at an unremarkable hour, and deliberately
+  # not on the hour: a few hundred small farm sites do not need a thundering
+  # herd arriving at midnight with everything else on the internet.
+  schedule:
+    - cron: '43 7 * 8,9,10,11 *'
+
+# One crawl at a time, ever. Two concurrent runs would double every host's
+# request rate and defeat the per-host serialisation in the fetcher.
+concurrency:
+  group: scrape
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    # A crawl that has not finished in an hour has gone wrong. The budget caps
+    # inside the script are the real defence against a runaway bill; this is
+    # the belt to their braces.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Crawl
+        env:
+          # Absent on a fork or before anybody sets it, in which case the model
+          # tier switches itself off and the heuristics still run.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ORCHARD_MAX_MODEL_CALLS: '250'
+          ORCHARD_MAX_TOKENS: '2000000'
+        run: |
+          node scripts/scrape.mjs \
+            --limit "${{ inputs.limit || 0 }}" \
+            ${{ (inputs.model || github.event_name == 'schedule') && '--model' || '' }} \
+            --out observations.json
+
+      # Observations are not facts. They are uploaded for a person to read
+      # before anything is promoted — which is the whole point of the split.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: observations
+          path: observations.json
+          retention-days: 30
