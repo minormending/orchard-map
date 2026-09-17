@@ -61,11 +61,16 @@ const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
     </tbody>
   </table>
   <p>
-    New York is thorough because the state has a trade association that publishes a
-    member directory. The other states are {fromOsm} listings scraped out of
-    OpenStreetMap, which means they are pins with names and little else. That is a
-    gap in <em>our data</em>, not a shortage of orchards — please do not read a thin
-    state as a state without farms.
+    New York, Connecticut and Pennsylvania each have a state-level source. New York's
+    is the richest — its association publishes categories, so those listings arrive
+    knowing whether a farm does pick-your-own. Connecticut's and Pennsylvania's are
+    rosters: names, addresses, phones and websites, with few attributes. Those get
+    filled in by reading the farms' own sites.
+  </p>
+  <p>
+    Massachusetts is still {fromOsm} OpenStreetMap leftovers — pins with names and
+    little else. That is a gap in <em>our data</em>, not a shortage of orchards;
+    please do not read a thin state as a state without farms.
   </p>
   <p>
     <strong>New Jersey is the worst of it.</strong> The state's own directory,
@@ -74,8 +79,15 @@ const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
     Jersey depends on OpenStreetMap and on people adding farms themselves.
   </p>
   <p>
-    Connecticut and Pennsylvania both publish directories that would be usable. They
-    are simply not done yet.
+    <strong>Connecticut</strong> comes from the
+    <a href="https://ctapples.org/find-a-farm/" rel="noreferrer nofollow">Connecticut Apple
+    Marketing Board</a>, and <strong>Pennsylvania</strong> from
+    <a href="https://papreferred.com/search" rel="noreferrer nofollow">PA Preferred</a>,
+    the state Department of Agriculture's branding programme. Pennsylvania is thinner
+    than it looks it should be for a reason: Adams County, the state's apple capital,
+    is about two hundred miles from New York City and falls outside the day-trip
+    radius entirely. What is here is the north-east — the Lehigh Valley, Bucks County
+    and the Pocono foothills.
   </p>
 
   <h2>Greenmarkets are not on the map</h2>
@@ -110,6 +122,10 @@ const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
       <strong>New York Apple Association</strong> — no licence stated. That is
       ambiguity rather than permission, and it is recorded as <code>unstated</code>
       rather than left blank or guessed at.
+    </li>
+    <li>
+      <strong>Connecticut Apple Marketing Board</strong> and
+      <strong>PA Preferred</strong> — no licence stated, recorded the same way.
     </li>
     <li>
       <strong>OpenStreetMap</strong> — <a href="https://opendatacommons.org/licenses/odbl/" rel="noreferrer">ODbL 1.0</a>,

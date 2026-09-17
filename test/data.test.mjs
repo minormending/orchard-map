@@ -79,9 +79,11 @@ test('provenance travels with every row', () => {
   // filter, and nobody has to remember which rows came from where.
   const LICENCES = {
     nyaa: 'unstated',
-    // Connecticut's apple marketing board states no licence either. Recorded
-    // the same way as New York's: as ambiguity, not as permission.
+    // Connecticut's apple marketing board and Pennsylvania's PA Preferred
+    // both state no licence either. Recorded the same way as New York's: as
+    // ambiguity, not as permission.
     ctapples: 'unstated',
+    papreferred: 'unstated',
     osm: 'ODbL-1.0',
     user: 'user-submitted',
   }

@@ -31,6 +31,10 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+// Placement — geocoding, the box, and the duplicate rules — is shared with the
+// Pennsylvania importer. Those rules took several rounds to get right and a
+// second copy would be a second place for them to drift.
+import { place, slugify, normaliseUrl, BOX } from './lib/directory.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = join(ROOT, 'src', 'data', 'orchards.json')
@@ -40,8 +44,6 @@ const SOURCE = 'https://ctapples.org/find-a-farm/'
 
 const APPLY = process.argv.includes('--apply')
 const WRITE_CANDIDATES = process.argv.includes('--candidates')
-
-const BOX = { south: 40.40, west: -76.50, north: 42.90, east: -71.80 }
 
 /** Their vocabulary, mapped onto ours. Wholesale is a fact about their trade,
  *  not about a visit, so it earns no tag. */
@@ -180,78 +182,11 @@ process.stderr.write(`parsed ${records.length} listings from ${SOURCE}\n`)
 
 // --- shape ------------------------------------------------------------------
 
-const normaliseUrl = (raw) => {
-  if (!raw) return null
-  let u = String(raw).trim()
-  if (!/^https?:\/\//i.test(u)) u = `https://${u}`
-  try {
-    const p = new URL(u)
-    if (/(^|\.)facebook\.com$/i.test(p.hostname)) return null
-    return p.href.replace(/\/$/, '')
-  } catch { return null }
-}
-
-const slugify = (name, town) =>
-  `${name} ${town ?? ''}`.toLowerCase().normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 70)
-
-function distanceM(a, b) {
-  const R = 6371000
-  const rad = (d) => (d * Math.PI) / 180
-  const dLat = rad(b.lat - a.lat)
-  const dLng = rad(b.lng - a.lng)
-  const h = Math.sin(dLat / 2) ** 2 +
-    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
-
-const normName = (s) =>
-  String(s ?? '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ')
-    .replace(/\b(the|inc|llc|farms?|orchards?|company|co|and|s)\b/g, ' ')
-    .replace(/\s+/g, ' ').trim()
-
-/**
- * Are these plausibly the same business?
- *
- * Substring matching alone is far too generous once the generic words are
- * stripped: "Beardsley's Cider Mill & Orchard" reduces to "beardsley cider
- * mill", which contains "cider mill" — so it matched "The Cider Mill, LLC",
- * a different farm in a different county. Requiring the FIRST distinctive
- * token to agree is what separates a shared common noun from a shared name.
- */
-function sameBusiness(a, b) {
-  const x = normName(a)
-  const y = normName(b)
-  if (x.length < 4 || y.length < 4) return false
-  if (x === y) return true
-  const [fx] = x.split(' ')
-  const [fy] = y.split(' ')
-  if (fx !== fy) return false
-  return x.startsWith(y) || y.startsWith(x)
-}
-
-/** Photon: no key, built for this, and already the geocoder map-kit uses. */
-async function geocode(q) {
-  const url = new URL('https://photon.komoot.io/api/')
-  url.searchParams.set('q', q)
-  url.searchParams.set('limit', '1')
-  try {
-    const r = await fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(20_000) })
-    if (!r.ok) return null
-    const b = await r.json()
-    const f = b?.features?.[0]
-    if (!f) return null
-    return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }
-  } catch { return null }
-}
-
 const existing = JSON.parse(readFileSync(OUT, 'utf8'))
 
 const clean = []
 const unclear = []
+let alreadyKnown = 0
 
 process.stderr.write('geocoding (one a second)\n')
 
@@ -269,55 +204,16 @@ for (const r of records) {
     source: SOURCE,
   }
 
-  if (!r.address) {
-    unclear.push({ ...base, reason: 'no street address on the listing' })
+  const at = await place(
+    { name: r.name, address: r.address, town: r.town, state: 'CT', zip: r.zip },
+    existing,
+    { userAgent: UA, source: 'ctapples' },
+  )
+  if (at.quiet) { alreadyKnown++; continue }
+  if (!at.ok) {
+    unclear.push({ ...base, lat: at.lat, lng: at.lng, reason: at.reason, duplicate_of: at.duplicate_of })
     continue
   }
-
-  let at = await geocode(`${r.address}, ${r.town}, CT ${r.zip}`)
-  await new Promise((s) => setTimeout(s, 1100))
-  if (!at) {
-    // Rural route numbers defeat the geocoder often enough to be worth a
-    // second try by name — Lyman Orchards and Bishop's Orchards are landmarks
-    // and resolve on the name where the street failed.
-    at = await geocode(`${r.name}, ${r.town}, CT`)
-    await new Promise((s) => setTimeout(s, 1100))
-  }
-
-  if (!at) {
-    unclear.push({ ...base, reason: 'could not be geocoded' })
-    continue
-  }
-  if (at.lat < BOX.south || at.lat > BOX.north || at.lng < BOX.west || at.lng > BOX.east) {
-    unclear.push({ ...base, ...at, reason: 'geocoded outside the day-trip box' })
-    continue
-  }
-
-  // Same checks the OSM importer uses, and for the same reason: a second pin
-  // for a farm already listed makes the map look careless exactly where
-  // somebody is deciding whether to trust it.
-  const near = existing.find((o) => distanceM(o, at) < 600)
-  const sameName = existing.find((o) => sameBusiness(o.name, r.name))
-  if (sameName) {
-    unclear.push({
-      ...base, ...at,
-      reason: `same name as one we have: ${sameName.name}`,
-      duplicate_of: sameName.slug,
-    })
-    continue
-  }
-  if (near) {
-    // Proximity alone is a weaker signal than a matching name, and worth
-    // separating: two real farms can share a village, and a geocoder that
-    // falls back to the town centre will put both on the same point.
-    unclear.push({
-      ...base, ...at,
-      reason: `within 600m of ${near.name} — same farm, or the geocoder gave up on both?`,
-      duplicate_of: near.slug,
-    })
-    continue
-  }
-
   clean.push({ ...base, ...at })
 }
 
@@ -331,6 +227,7 @@ ${records.length} listings
 
   ready to add:  ${clean.length}
   need a look:   ${unclear.length}
+  already ours:  ${alreadyKnown}
 ${Object.entries(byReason).map(([k, v]) => `    ${v}  ${k}`).join('\n')}
 
   with a website: ${clean.filter((c) => c.website).length}

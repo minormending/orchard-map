@@ -11,13 +11,29 @@ there is hard cider or only the sweet stuff, whether dogs are allowed, or
 whether you need a timed ticket. Those are the facts that decide a two-hour
 drive with children in the car.
 
-199 orchards, cider mills and farm markets — 94 of them pick-your-own.
+248 orchards, cider mills and farm markets — 94 of them pick-your-own.
 
-Coverage is uneven and the About page says exactly how: New York is thorough
-because the state has a trade association with a member directory; Connecticut,
-Pennsylvania and Massachusetts are OpenStreetMap leftovers. New Jersey's own
-directory serves `Disallow: /` to every crawler, so it depends on OSM and on
-people adding farms themselves.
+| state | listings | source |
+| --- | --- | --- |
+| NY | 189 | [New York Apple Association](https://www.applesfromny.com/) |
+| CT | 38 | [Connecticut Apple Marketing Board](https://ctapples.org/find-a-farm/) |
+| PA | 17 | [PA Preferred](https://papreferred.com/search) |
+| MA | 4 | OpenStreetMap leftovers |
+| NJ | 0 | see below |
+
+New York's source is the only one that publishes categories, so its listings
+arrive knowing whether a farm does pick-your-own. The others are rosters —
+names, addresses, websites — and the attributes get filled in by reading the
+farms' own sites.
+
+Pennsylvania looks thin for a good reason: Adams County, the state's apple
+capital, is two hundred miles from New York City and falls outside the
+day-trip radius entirely. What is here is the north-east.
+
+New Jersey has none, and not for want of orchards. `findjerseyfresh.com`, the
+state's own directory, serves `Disallow: /` to every crawler. That is a clear
+answer and it is respected, so NJ waits on OpenStreetMap and on people adding
+farms themselves.
 
 Static site on GitHub Pages, Postgres behind it, no server in between. The
 browser can read public data and propose writes; it never decides whether a
@@ -77,7 +93,21 @@ subdivides any cell that comes back saturated.
 ```bash
 node scripts/import-osm.mjs            # dry run
 node scripts/import-osm.mjs --apply    # merge OSM's leftovers in
+
+node scripts/import-ctapples.mjs       # Connecticut
+node scripts/import-papreferred.mjs    # Pennsylvania
 ```
+
+Every importer is a dry run by default and shares one set of placement rules
+in `scripts/lib/directory.mjs` — geocoding, the day-trip box, and the
+duplicate checks. Shared rather than copied because those rules took several
+rounds to get right: the name matcher started generous enough to match
+"Beardsley's **Cider Mill** & Orchard" against "The **Cider Mill**, LLC", a
+different farm in a different county.
+
+A listing an importer will not place confidently goes to
+`scripts/.candidates/` instead of being guessed at, and a weekly routine
+reviews them.
 
 OSM rows arrive with **no categories at all** unless `craft=cider` says
 otherwise. Inferring pick-your-own from a name containing "U-Pick" is exactly
