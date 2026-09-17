@@ -1,5 +1,7 @@
 import { tagLabels } from '../lib/filters'
 import { ReportBox } from './ReportBox'
+import { VisitorFacts } from './VisitorFacts'
+import { FlagLink } from './FlagLink'
 import { addressLine, directionsUrl, orchardUrl, telUrl } from '../lib/orchards'
 import type { Orchard } from '../lib/types'
 
@@ -72,10 +74,12 @@ export function OrchardDetail({ orchard, base, distance, position, onClose }: Pr
       </p>
 
       <ReportBox orchard={orchard} position={position} />
+      <VisitorFacts orchard={orchard} />
 
       <a className="sheet-more" href={orchardUrl(base, orchard.slug)}>
         Everything we know about {orchard.name} →
       </a>
+      <FlagLink orchard={orchard} />
     </section>
   )
 }

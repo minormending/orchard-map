@@ -19,6 +19,9 @@ interface Props {
   /** Filled in once the map exists, so the list can move it without the
    *  container having to know anything about MapLibre. */
   apiRef?: { current: MapApi | null }
+  /** While true, a click on the map places a pin instead of selecting one. */
+  placing?: boolean
+  onPlace?: (at: { lat: number; lng: number }) => void
 }
 
 function toGeoJSON(orchards: Orchard[]): FeatureCollection {
@@ -43,7 +46,7 @@ function toGeoJSON(orchards: Orchard[]): FeatureCollection {
   }
 }
 
-export function OrchardMap({ orchards, selected, onSelect, apiRef }: Props) {
+export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPlace }: Props) {
   const holder = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const ready = useRef(false)
@@ -57,6 +60,10 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef }: Props) {
   orchardsRef.current = orchards
   const selectedRef = useRef(selected)
   selectedRef.current = selected
+  const placingRef = useRef(placing)
+  placingRef.current = placing
+  const onPlaceRef = useRef(onPlace)
+  onPlaceRef.current = onPlace
 
   useEffect(() => {
     if (!holder.current || map.current) return
@@ -122,12 +129,20 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef }: Props) {
       })
 
       m.on('click', 'orchard-dots', (e) => {
+        // While placing a new pin, a click on an existing one is still a
+        // placement — otherwise the one spot you cannot put a farm is next to
+        // another farm, which is exactly where orchards are.
+        if (placingRef.current) return
         const slug = e.features?.[0]?.properties?.slug
         if (typeof slug === 'string') onSelectRef.current(slug)
       })
       // Tapping the background closes the sheet, which is the other half of
       // "anything covering the screen needs a way out".
       m.on('click', (e) => {
+        if (placingRef.current) {
+          onPlaceRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng })
+          return
+        }
         const hits = m.queryRenderedFeatures(e.point, { layers: ['orchard-dots'] })
         if (hits.length === 0) onSelectRef.current(null)
       })

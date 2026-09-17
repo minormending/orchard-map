@@ -537,3 +537,103 @@ a { color: var(--accent); }
   color: var(--leaf);
   font-weight: 500;
 }
+
+/* --- accounts and contributions ------------------------------------------ */
+
+.panel-foot {
+  border-top: 1px solid var(--line);
+  padding: 0.7rem 0.85rem;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  background: var(--surface);
+  flex: none;
+}
+
+.auth { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+.auth-who { font-weight: 500; }
+.auth-error { color: var(--apple); font-size: 0.78rem; margin: 0.3rem 0 0; }
+
+.facts-signin {
+  margin: 0 0 0.8rem;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.facts-claim { margin-bottom: 0.8rem; }
+.facts-q { margin: 0 0 0.4rem; font-size: 0.85rem; font-weight: 500; }
+.facts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.facts-list li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+.facts-buttons { display: flex; gap: 0.25rem; flex: none; }
+.facts-buttons .chip { font-size: 0.74rem; padding: 0.15rem 0.5rem; }
+.facts-known strong { color: var(--leaf); }
+.facts-thanks { color: var(--leaf); font-style: normal; font-size: 0.76rem; }
+.facts-note { margin: 0.5rem 0 0; font-size: 0.76rem; color: var(--ink-2); }
+
+.flag-open { display: block; margin-top: 0.7rem; font-size: 0.78rem; }
+.flag { display: grid; gap: 0.5rem; margin-top: 0.7rem; }
+.flag textarea, .flag input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.6rem;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.flag-email span { display: block; font-size: 0.75rem; color: var(--ink-2); margin-bottom: 0.2rem; }
+.flag-actions { display: flex; gap: 0.6rem; align-items: center; }
+.flag-sent { color: var(--leaf); font-size: 0.82rem; font-weight: 500; margin: 0.7rem 0 0; }
+
+.add {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  width: min(24rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.95rem 1.05rem 1.05rem;
+  z-index: 8;
+}
+.add h2 { margin: 0 2rem 0.6rem 0; font-size: 1.05rem; }
+.add-field { display: block; margin-bottom: 0.5rem; }
+.add-field span { display: block; font-size: 0.78rem; color: var(--ink-2); margin-bottom: 0.15rem; }
+.add-field input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.add-where { font-size: 0.8rem; color: var(--ink-2); margin: 0.6rem 0; }
+.add .chips { margin-bottom: 0.7rem; }
+
+.placing-hint {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  margin: 0;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.82rem;
+  box-shadow: var(--shadow);
+}

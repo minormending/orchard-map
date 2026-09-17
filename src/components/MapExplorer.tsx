@@ -3,6 +3,9 @@ import { useEscape } from '@minormending/map-kit'
 import { OrchardMap, type MapApi } from './OrchardMap'
 import { OrchardDetail } from './OrchardDetail'
 import { SeasonBanner } from './SeasonBanner'
+import { AuthButton } from './AuthButton'
+import { AddOrchard } from './AddOrchard'
+import { HAS_DB } from '../lib/db'
 import { FILTERS, EMPTY_FILTERS, applyFilters, distanceM, milesLabel, tagLabels, type FilterState } from '../lib/filters'
 import type { Orchard, Tag } from '../lib/types'
 
@@ -18,6 +21,9 @@ export function MapExplorer({ orchards, base }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [here, setHere] = useState<Position>(null)
   const [listOpen, setListOpen] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [placing, setPlacing] = useState(false)
+  const [placed, setPlaced] = useState<Position>(null)
   const mapApi = useRef<MapApi | null>(null)
 
   const visible = useMemo(() => {
@@ -152,6 +158,15 @@ export function MapExplorer({ orchards, base }: Props) {
             </li>
           )}
         </ul>
+
+        {HAS_DB && (
+          <div className="panel-foot">
+            <AuthButton />
+            <button type="button" className="link" onClick={() => { setAdding(true); setPlacing(true) }}>
+              Add a missing orchard
+            </button>
+          </div>
+        )}
       </aside>
 
       <div className="map-wrap">
@@ -160,7 +175,21 @@ export function MapExplorer({ orchards, base }: Props) {
           selected={selected}
           onSelect={setSelected}
           apiRef={mapApi}
+          placing={placing}
+          onPlace={(at) => { setPlaced(at); setPlacing(false) }}
         />
+
+        {placing && (
+          <p className="placing-hint">Click the farm's position on the map</p>
+        )}
+
+        {adding && (
+          <AddOrchard
+            at={placed}
+            onPick={() => setPlacing(true)}
+            onClose={() => { setAdding(false); setPlacing(false) }}
+          />
+        )}
         {chosen && (
           <OrchardDetail
             orchard={chosen}
