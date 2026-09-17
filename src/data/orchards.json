@@ -86,28 +86,6 @@
     "imported_at": "2026-09-17"
   },
   {
-    "id": "nyaa-3445",
-    "slug": "annutto-s-farm-stand-oneonta",
-    "name": "Annutto’s Farm Stand",
-    "lat": 42.598969,
-    "lng": -74.70953,
-    "address": "5396 St. Hwy. 7",
-    "town": "Oneonta",
-    "state": "NY",
-    "zip": "13820",
-    "phone": "(607) 432-7905",
-    "website": "https://annuttos.com",
-    "tags": [
-      "farm_market",
-      "fresh_cider",
-      "heirloom"
-    ],
-    "import_source": "nyaa",
-    "import_id": "3445",
-    "import_licence": "unstated",
-    "imported_at": "2026-09-17"
-  },
-  {
     "id": "nyaa-5950",
     "slug": "apple-blossom-farms-clintondale",
     "name": "Apple Blossom Farms",
@@ -121,6 +99,19 @@
     "website": "https://appleblossomfarmsny.com",
     "tags": [
       "gift_boxes"
+    ],
+    "varieties": [
+      "ginger-gold",
+      "gala",
+      "honeycrisp",
+      "mcintosh",
+      "empire",
+      "snapdragon",
+      "golden-delicious",
+      "fuji",
+      "granny-smith",
+      "rubyfrost",
+      "evercrisp"
     ],
     "import_source": "nyaa",
     "import_id": "5950",
@@ -188,6 +179,26 @@
       "farm_market",
       "pick_your_own"
     ],
+    "upick_open": true,
+    "hours": "Thursday-Sunday, 9am to 6pm. Open all holidays – Labor Day (9/7), Rosh Hashanah (9/12-9/13), Yum Kippur (9/21), Columbus Day (10/12) – from 9:00am – 6:00pm.",
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://appleridgeorchards.com/pick-your-own-apples/",
+    "varieties": [
+      "gala",
+      "autumn-crisp",
+      "honeycrisp",
+      "mcintosh",
+      "cortland",
+      "empire",
+      "macoun",
+      "red-delicious",
+      "crispin",
+      "golden-delicious",
+      "idared",
+      "jonagold",
+      "fuji",
+      "evercrisp"
+    ],
     "import_source": "nyaa",
     "import_id": "3452",
     "import_licence": "unstated",
@@ -228,6 +239,9 @@
     "tags": [
       "craft_cider"
     ],
+    "reservations_required": false,
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://www.badseedhardcider.com/taproom",
     "import_source": "nyaa",
     "import_id": "3459",
     "import_licence": "unstated",
@@ -287,6 +301,9 @@
     "tags": [
       "farm_market"
     ],
+    "hours": "Monday - Saturday: 7:00am-6:30pm Sunday: 8:00am-6:00pm",
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://www.bartonorchards.com/the-apple-core/",
     "import_source": "nyaa",
     "import_id": "3468",
     "import_licence": "unstated",
@@ -308,6 +325,18 @@
       "farm_market",
       "pick_your_own"
     ],
+    "hours": "Monday: 11:00 AM – 6:00 PM; Tuesday: 12:00 PM – 6:00 PM; Wednesday: 12:00 PM – 6:00 PM; Thursday: 12:00 PM – 6:00 PM; Friday: 12:00 PM – 9:00 PM; Saturday: 11:00 AM – 9:00 PM; Sunday: 11:00 AM – 6:00 PM",
+    "admission": "$25/Peck (~10 lbs)",
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://www.bartonorchards.com/plan-your-visit/",
+    "varieties": [
+      "paula-red",
+      "zestar",
+      "ginger-gold",
+      "jonamac",
+      "honeycrisp",
+      "mcintosh"
+    ],
     "import_source": "nyaa",
     "import_id": "3467",
     "import_licence": "unstated",
@@ -328,6 +357,9 @@
     "tags": [
       "farm_market"
     ],
+    "hours": "Open everyday 9-6. Sundays 9-5",
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://maysfarmny.com/",
     "import_source": "nyaa",
     "import_id": "3477",
     "import_licence": "unstated",
@@ -498,6 +530,38 @@
       "heirloom",
       "pick_your_own"
     ],
+    "upick_open": true,
+    "hours": "Sept-Oct Daily 9-5 (Last Entry to Field 4:15pm)",
+    "admission": "Apples: Peck $25 (2 people) 1/2 Bushel $40 OR 2 for $63 (4 people)",
+    "reservations_required": false,
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://www.bowmanorchards.com/you-pick-days/",
+    "varieties": [
+      "jersey-mac",
+      "paula-red",
+      "zestar",
+      "20-ounce",
+      "gala",
+      "jonamac",
+      "autumn-crisp",
+      "honeycrisp",
+      "mcintosh",
+      "cortland",
+      "empire",
+      "snapdragon",
+      "macoun",
+      "red-delicious",
+      "cameo",
+      "crispin",
+      "golden-delicious",
+      "idared",
+      "jonagold",
+      "braeburn",
+      "fuji",
+      "granny-smith",
+      "rubyfrost",
+      "evercrisp"
+    ],
     "import_source": "nyaa",
     "import_id": "3499",
     "import_licence": "unstated",
@@ -519,6 +583,18 @@
       "farm_market",
       "fresh_cider",
       "pick_your_own"
+    ],
+    "hours": "Monday: CLOSED Tuesday: CLOSED Wednesday: CLOSED Thursday: CLOSED Friday: 9am-5pm Saturday: 9am-5pm Sunday: 9am-5pm",
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://breezehillfarmpreserve.com/",
+    "varieties": [
+      "honeycrisp",
+      "empire",
+      "macoun",
+      "crispin",
+      "rome",
+      "fuji",
+      "granny-smith"
     ],
     "import_source": "nyaa",
     "import_id": "3501",
@@ -645,6 +721,18 @@
     "tags": [
       "pick_your_own"
     ],
+    "upick_open": true,
+    "hours": "10am-5pm daily until apples last",
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://rhinebeckapples.com/",
+    "varieties": [
+      "gala",
+      "jonamac",
+      "cortland",
+      "empire",
+      "macoun",
+      "red-delicious"
+    ],
     "import_source": "nyaa",
     "import_id": "3518",
     "import_licence": "unstated",
@@ -685,6 +773,10 @@
     "tags": [
       "pick_your_own"
     ],
+    "upick_open": true,
+    "hours": "10:00 am until 5:00 pm. Open weekends (Saturday and Sunday) beginning September 12/13 until October 17/18, 2026",
+    "checked_at": "2026-09-17T16:32:57.886Z",
+    "source_url": "https://clarkesfamilyfarm.com/visit-us",
     "import_source": "nyaa",
     "import_id": "3528",
     "import_licence": "unstated",

@@ -89,6 +89,36 @@ once and never regenerated: substituting at apply time would make a checksum
 depend on the environment, and the runner refuses a migration whose file
 changed after it was applied.
 
+## From a crawl to the map
+
+Five steps, and each boundary is a place a wrong "picking is open" can be
+stopped before somebody drives two hours on it.
+
+```
+scrape.mjs --queue   crawl politely, settle what a regex can, queue the rest
+      ↓
+a scheduled session  read the queued text, decide, record observations
+      ↓
+record-observations  validate against closed vocabularies, insert
+      ↓
+promote_observations at a confidence threshold — a person runs this
+      ↓
+db:export + deploy   write src/data/orchards.json, rebuild the static site
+```
+
+Nothing a visitor reads changes until the last step. The export is deliberately
+not something the reader does.
+
+```bash
+node scripts/export-data.mjs            # says what would change
+node scripts/export-data.mjs --apply
+pnpm build
+```
+
+Hidden and removed orchards are simply left out of the export, which is how a
+soft delete reaches the map: the row and its history stay in the database, the
+pin stops being published.
+
 ## The two field classes
 
 This is the part worth understanding before changing anything.

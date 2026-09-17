@@ -72,6 +72,8 @@ export interface Orchard {
   /** When any of the volatile fields above were last confirmed. A stale "open"
    *  costs somebody a two-hour drive, so this is rendered, never hidden. */
   checked_at?: string | null
+  /** The page it was read from, so a reader can check us. */
+  source_url?: string | null
 }
 
 /**

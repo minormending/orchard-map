@@ -3,6 +3,8 @@ import Base from '../../layouts/Base.astro'
 import { ORCHARDS, addressLine, directionsUrl, telUrl } from '../../lib/orchards'
 import { distanceM, milesLabel, tagLabels } from '../../lib/filters'
 import { ripeNow, windowLabel } from '../../lib/season'
+import { VARIETY_BY_SLUG } from '../../lib/season'
+import { checkedState, pickingLine, hasFarmData, HOURS_FRESHNESS } from '../../lib/checked'
 import type { Orchard } from '../../lib/types'
 
 /**
@@ -36,6 +38,16 @@ const upick = orchard.tags.includes('pick_your_own')
 const built = new Date()
 const ripe = ripeNow(built)
 const builtLabel = built.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })
+
+const farmData = hasFarmData(orchard)
+const checked = checkedState(orchard, HOURS_FRESHNESS, built)
+const grows = (orchard.varieties ?? [])
+  .map((v) => VARIETY_BY_SLUG.get(v))
+  .filter((v) => v !== undefined)
+
+/** This farm's own apples, narrowed to the ones the calendar says are ready. */
+const ripeSlugs = new Set(ripe.map((v) => v.slug))
+const ripeHere = grows.filter((v) => ripeSlugs.has(v!.slug))
 
 const nearby = ORCHARDS
   .filter((o) => o.slug !== orchard.slug)
@@ -98,7 +110,36 @@ const jsonLd = {
   )}
 
   <h2>What is usually ripe now</h2>
-  {ripe.length > 0 ? (
+  {grows.length > 0 ? (
+    /*
+     * The payoff of the whole pipeline: this farm's own list, narrowed to what
+     * the calendar says is ready. Until the scraper read their site this page
+     * could only say what the region does on average — which is useful, and is
+     * not the same as an answer about the orchard you are about to drive to.
+     */
+    ripeHere.length > 0 ? (
+      <>
+        <p>
+          {orchard.name} grows {grows.length} {grows.length === 1 ? 'variety' : 'varieties'} we know of,
+          and as of {builtLabel} these are usually ready:
+        </p>
+        <ul>
+          {ripeHere.map((v) => <li><strong>{v.name}</strong> — {windowLabel(v)}</li>)}
+        </ul>
+        <p class="muted">
+          Their list, our calendar. Seasons move a week or two with the weather and
+          this is not a report from the trees —
+          <a href={`${base}varieties`}> the whole calendar</a>.
+        </p>
+      </>
+    ) : (
+      <p class="muted">
+        None of the {grows.length} varieties {orchard.name} grows is usually ready at
+        this point in the year. <a href={`${base}varieties`}>The picking calendar</a>
+        shows when each one comes in.
+      </p>
+    )
+  ) : ripe.length > 0 ? (
     <>
       <p>
         As of {builtLabel}, Hudson Valley orchards are usually picking
@@ -121,27 +162,75 @@ const jsonLd = {
     </p>
   )}
 
-  <h2>What we do not know</h2>
-  <div class="callout">
-    <p>
-      <strong>Nobody has checked this farm's hours, prices, or whether picking is
-      open.</strong> Everything above came from a trade-association roster, which says
-      the farm exists and sells apples — not that you can pick them this weekend.
-    </p>
-    <p>
-      Fields like dogs, restrooms, hayrides and cider donuts are deliberately absent
-      rather than shown as "no". An empty answer is honest; a wrong one costs you a
-      two-hour drive.
-    </p>
-  </div>
+  {farmData ? (
+    <>
+      <h2>What the farm says</h2>
+      <div class="callout">
+        <p>{pickingLine(orchard, built)}</p>
+        <p>
+          Everything below was read from {orchard.source_url
+            ? <a href={orchard.source_url} rel="noreferrer nofollow">their own website</a>
+            : 'their own website'}, {checked?.ago}, by a machine. Nobody rang them.
+        </p>
+      </div>
+    </>
+  ) : (
+    <>
+      <h2>What we do not know</h2>
+      <div class="callout">
+        <p>
+          <strong>Nobody has checked this farm's hours, prices, or whether picking is
+          open.</strong> Everything above came from a trade-association roster, which says
+          the farm exists and sells apples — not that you can pick them this weekend.
+        </p>
+        <p>
+          Fields like dogs, restrooms, hayrides and cider donuts are deliberately absent
+          rather than shown as "no". An empty answer is honest; a wrong one costs you a
+          two-hour drive.
+        </p>
+      </div>
+    </>
+  )}
 
   <h2>Details</h2>
   <table class="facts">
     <tbody>
-      <tr><th>Opening hours</th><td class="unknown">Not checked</td></tr>
-      <tr><th>Picking open now</th><td class="unknown">Not checked</td></tr>
-      <tr><th>Admission</th><td class="unknown">Not checked</td></tr>
-      <tr><th>Varieties</th><td class="unknown">Not recorded yet</td></tr>
+      <tr>
+        <th>Opening hours</th>
+        <td>{orchard.hours ?? <span class="unknown">Not checked</span>}</td>
+      </tr>
+      <tr>
+        <th>Picking open</th>
+        <td>
+          {orchard.upick_open === true ? 'Yes, per the farm'
+            : orchard.upick_open === false ? 'No, per the farm'
+            : <span class="unknown">Not checked</span>}
+        </td>
+      </tr>
+      <tr>
+        <th>Admission</th>
+        <td>{orchard.admission ?? <span class="unknown">Not checked</span>}</td>
+      </tr>
+      <tr>
+        <th>Reservations</th>
+        <td>
+          {orchard.reservations_required === true ? 'Required'
+            : orchard.reservations_required === false ? 'Not required'
+            : <span class="unknown">Not checked</span>}
+        </td>
+      </tr>
+      <tr>
+        <th>Varieties they grow</th>
+        <td>
+          {grows.length > 0
+            ? grows.map((v) => v!.name).join(', ')
+            : <span class="unknown">Not recorded yet</span>}
+        </td>
+      </tr>
+      <tr>
+        <th>Last checked</th>
+        <td>{checked ? checked.ago : <span class="unknown">Never</span>}</td>
+      </tr>
       <tr>
         <th>Listed by</th>
         <td>New York Apple Association (no licence stated), imported {orchard.imported_at}</td>

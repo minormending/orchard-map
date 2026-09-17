@@ -18,7 +18,8 @@
     "db:verify": "bash scripts/verify-schema.sh",
     "db:provision": "node scripts/provision-supabase.mjs",
     "test:api": "node scripts/test-api.mjs",
-    "auth:configure": "node scripts/configure-auth.mjs"
+    "auth:configure": "node scripts/configure-auth.mjs",
+    "db:export": "node scripts/export-data.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
