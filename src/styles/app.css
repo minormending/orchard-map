@@ -365,7 +365,17 @@ a { color: var(--accent); }
 /* --- narrow -------------------------------------------------------------- */
 
 @media (max-width: 52rem) {
-  .explorer { grid-template-columns: 1fr; position: relative; }
+  /*
+   * `overflow: hidden` is what actually hides the closed panel.
+   *
+   * The panel is absolutely positioned at inset:0 and slid down by
+   * translateY(100%) — its own height, which equals the explorer's. That puts
+   * its top exactly on the explorer's bottom edge, which is correct, and then
+   * it paints straight over the compact footer below because nothing was
+   * clipping it. On a phone that showed as the season banner and the search
+   * box sitting underneath the map instead of off-screen.
+   */
+  .explorer { grid-template-columns: 1fr; position: relative; overflow: hidden; }
 
   /* The map is the page on a phone; the list slides over it. */
   .panel {
@@ -401,6 +411,16 @@ a { color: var(--accent); }
   .sheet { left: 0.5rem; right: 0.5rem; bottom: 4rem; width: auto; }
   .site-head { flex-wrap: wrap; }
   .site-head .tagline { flex-basis: 100%; }
+
+  /*
+   * On a phone the map page's footer was taking a sixth of the screen to say
+   * two things, one of which MapLibre's own attribution control is already
+   * saying inside the map. The tile credits go; the licence note and the "ring
+   * ahead" caveat stay, because those are the honest part and nothing else
+   * says them.
+   */
+  .site-foot-compact .foot-tiles { display: none; }
+  .site-foot-compact { padding: 0.45rem 0.75rem; font-size: 0.7rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
