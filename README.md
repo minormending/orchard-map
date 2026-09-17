@@ -11,7 +11,13 @@ there is hard cider or only the sweet stuff, whether dogs are allowed, or
 whether you need a timed ticket. Those are the facts that decide a two-hour
 drive with children in the car.
 
-189 orchards, cider mills and farm markets — 94 of them pick-your-own.
+199 orchards, cider mills and farm markets — 94 of them pick-your-own.
+
+Coverage is uneven and the About page says exactly how: New York is thorough
+because the state has a trade association with a member directory; Connecticut,
+Pennsylvania and Massachusetts are OpenStreetMap leftovers. New Jersey's own
+directory serves `Disallow: /` to every crawler, so it depends on OSM and on
+people adding farms themselves.
 
 Static site on GitHub Pages, Postgres behind it, no server in between. The
 browser can read public data and propose writes; it never decides whether a
@@ -36,12 +42,16 @@ all; the database is only involved in writes.
 
 ## Where the data comes from
 
-The [New York Apple Association](https://www.applesfromny.com/) member
-directory, via its WordPress store locator. Names, addresses, coordinates,
-phone numbers, websites and categories.
+Two sources, with genuinely different terms, both recorded per row.
 
-**Not OpenStreetMap**, which was the obvious first choice and does not work.
-Measured across this region:
+The [New York Apple Association](https://www.applesfromny.com/) member
+directory, via its WordPress store locator — names, addresses, coordinates,
+phone numbers, websites and categories, for New York. It states **no licence**,
+which is ambiguity rather than permission.
+
+[OpenStreetMap](https://www.openstreetmap.org/) as a cross-reference, under
+**ODbL 1.0** — the only rows here whose terms are not a guess. It is second and
+not first because measured across this region:
 
 | | |
 | --- | --- |
@@ -65,6 +75,16 @@ node scripts/import-nyaa.mjs --fresh    # ignore the local cache
 The locator caps every response at 25 rows, so the importer sweeps a grid and
 subdivides any cell that comes back saturated.
 
+```bash
+node scripts/import-osm.mjs            # dry run
+node scripts/import-osm.mjs --apply    # merge OSM's leftovers in
+```
+
+OSM rows arrive with **no categories at all** unless `craft=cider` says
+otherwise. Inferring pick-your-own from a name containing "U-Pick" is exactly
+the sort of guess that puts a family in a car; an empty tag list renders as "No
+details yet", which is true.
+
 ### Greenmarkets are not on the map
 
 The directory also lists 51 New York City greenmarket stalls — a folding table
@@ -78,8 +98,8 @@ grow apples, like Fishkill Farms, stay.
 300 rows. That is right for thousands of restrooms across a city, where the
 viewport *is* the query.
 
-Here the entire region is smaller than one of those pages — 189 rows, about
-90KB — so fetching it is pure latency. And unlike restrooms, this map is found
+Here the entire region is smaller than one of those pages — 199 rows, about
+95KB — so fetching it is pure latency. And unlike restrooms, this map is found
 through Google: "apple picking warwick ny" is the query that matters, and a
 single-page app cannot rank for it, because there is one URL and its markup is
 a loading state.

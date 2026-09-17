@@ -255,6 +255,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "osm-node-12705963001",
+    "slug": "bartlett-s-orchard-farm-market",
+    "name": "Bartlett's Orchard Farm Market",
+    "lat": 42.40263,
+    "lng": -73.32412,
+    "address": "575 Swamp Road",
+    "town": null,
+    "state": "MA",
+    "zip": null,
+    "phone": null,
+    "website": null,
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "node/12705963001",
+    "import_licence": "ODbL-1.0",
+    "imported_at": "2026-09-17"
+  },
+  {
     "id": "nyaa-3468",
     "slug": "barton-orchards-apple-core-poughkeepsie",
     "name": "Barton Orchards’ Apple Core",
@@ -398,6 +416,24 @@
     "import_source": "nyaa",
     "import_id": "3486",
     "import_licence": "unstated",
+    "imported_at": "2026-09-17"
+  },
+  {
+    "id": "osm-node-9306795076",
+    "slug": "blue-hills-orchard",
+    "name": "Blue Hills Orchard",
+    "lat": 41.449759,
+    "lng": -72.867071,
+    "address": null,
+    "town": null,
+    "state": "CT",
+    "zip": null,
+    "phone": null,
+    "website": null,
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "node/9306795076",
+    "import_licence": "ODbL-1.0",
     "imported_at": "2026-09-17"
   },
   {
@@ -676,6 +712,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "osm-node-6937804691",
+    "slug": "cold-spring-orchard",
+    "name": "Cold Spring Orchard",
+    "lat": 42.253851,
+    "lng": -72.359616,
+    "address": "391 Sabin Street",
+    "town": null,
+    "state": "MA",
+    "zip": null,
+    "phone": "+1-413-323-6647",
+    "website": "https://coldspringorchard.com",
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "node/6937804691",
+    "import_licence": "ODbL-1.0",
+    "imported_at": "2026-09-17"
+  },
+  {
     "id": "nyaa-4917",
     "slug": "cooperstown-beverage-exchange-cooperstown",
     "name": "Cooperstown Beverage Exchange",
@@ -717,6 +771,24 @@
     "import_source": "nyaa",
     "import_id": "3537",
     "import_licence": "unstated",
+    "imported_at": "2026-09-17"
+  },
+  {
+    "id": "osm-way-1280050460",
+    "slug": "county-line-orchard-kempton",
+    "name": "County Line Orchard",
+    "lat": 40.648932,
+    "lng": -75.849102,
+    "address": "9200 Kings Highway",
+    "town": "Kempton",
+    "state": "PA",
+    "zip": "19529",
+    "phone": "+1-610-756-6411",
+    "website": "https://countylineorchardpa.com/home",
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "way/1280050460",
+    "import_licence": "ODbL-1.0",
     "imported_at": "2026-09-17"
   },
   {
@@ -1853,6 +1925,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "osm-node-13990218562",
+    "slug": "lelakowski-s-fruit-vegetable-farm",
+    "name": "Lelakowski's Fruit & Vegetable Farm",
+    "lat": 42.894458,
+    "lng": -76.019358,
+    "address": "2554 berwyn road",
+    "town": null,
+    "state": "NY",
+    "zip": null,
+    "phone": null,
+    "website": null,
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "node/13990218562",
+    "import_licence": "ODbL-1.0",
+    "imported_at": "2026-09-17"
+  },
+  {
     "id": "nyaa-3668",
     "slug": "lewin-farms-calverton",
     "name": "Lewin Farms",
@@ -1871,6 +1961,24 @@
     "import_source": "nyaa",
     "import_id": "3668",
     "import_licence": "unstated",
+    "imported_at": "2026-09-17"
+  },
+  {
+    "id": "osm-node-8432608436",
+    "slug": "lewis-s-orchard",
+    "name": "Lewis's Orchard",
+    "lat": 41.365455,
+    "lng": -75.85074,
+    "address": null,
+    "town": null,
+    "state": "PA",
+    "zip": null,
+    "phone": null,
+    "website": null,
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "node/8432608436",
+    "import_licence": "ODbL-1.0",
     "imported_at": "2026-09-17"
   },
   {
@@ -2238,6 +2346,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "osm-way-641677489",
+    "slug": "monarch-orchards",
+    "name": "Monarch Orchards",
+    "lat": 42.143681,
+    "lng": -71.946725,
+    "address": null,
+    "town": null,
+    "state": "MA",
+    "zip": null,
+    "phone": null,
+    "website": "https://monarchorchardsfarm.com",
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "way/641677489",
+    "import_licence": "ODbL-1.0",
+    "imported_at": "2026-09-17"
+  },
+  {
     "id": "nyaa-3706",
     "slug": "montgomery-place-orchards-red-hook",
     "name": "Montgomery Place Orchards",
@@ -2401,6 +2527,24 @@
     "import_source": "nyaa",
     "import_id": "3730",
     "import_licence": "unstated",
+    "imported_at": "2026-09-17"
+  },
+  {
+    "id": "osm-way-1391268770",
+    "slug": "pappy-s-orchard-lisa-s-kitchen-coopersburg",
+    "name": "Pappy's Orchard & Lisa's Kitchen",
+    "lat": 40.463341,
+    "lng": -75.443793,
+    "address": "2576 Cassel Road",
+    "town": "Coopersburg",
+    "state": "PA",
+    "zip": "18036",
+    "phone": "+12156793981",
+    "website": "http://pappysorchard.com",
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "way/1391268770",
+    "import_licence": "ODbL-1.0",
     "imported_at": "2026-09-17"
   },
   {
@@ -2613,6 +2757,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "osm-way-215682460",
+    "slug": "red-apple-farm",
+    "name": "Red Apple Farm",
+    "lat": 42.58146,
+    "lng": -72.145972,
+    "address": "455 Highland Avenue",
+    "town": null,
+    "state": "MA",
+    "zip": null,
+    "phone": null,
+    "website": null,
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "way/215682460",
+    "import_licence": "ODbL-1.0",
+    "imported_at": "2026-09-17"
+  },
+  {
     "id": "nyaa-4997",
     "slug": "red-maple-vineyard-west-park",
     "name": "Red Maple Vineyard",
@@ -2785,6 +2947,24 @@
     "import_source": "nyaa",
     "import_id": "3768",
     "import_licence": "unstated",
+    "imported_at": "2026-09-17"
+  },
+  {
+    "id": "osm-way-958246607",
+    "slug": "rose-s-berry-farm-glastonbury",
+    "name": "Rose's Berry Farm",
+    "lat": 41.656259,
+    "lng": -72.577965,
+    "address": "297 Matson Hill Road",
+    "town": "Glastonbury",
+    "state": "CT",
+    "zip": "06073",
+    "phone": null,
+    "website": null,
+    "tags": [],
+    "import_source": "osm",
+    "import_id": "way/958246607",
+    "import_licence": "ODbL-1.0",
     "imported_at": "2026-09-17"
   },
   {

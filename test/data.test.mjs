@@ -74,12 +74,34 @@ test('no orchard is a greenmarket stall and nothing else', () => {
 })
 
 test('provenance travels with every row', () => {
+  // Two sources with genuinely different terms, which is the reason the
+  // licence is a column rather than a line in a README: withdrawing one is a
+  // filter, and nobody has to remember which rows came from where.
+  const LICENCES = { nyaa: 'unstated', osm: 'ODbL-1.0', user: 'user-submitted' }
   for (const o of ORCHARDS) {
-    assert.equal(o.import_source, 'nyaa')
+    assert.ok(o.import_source in LICENCES, `${o.name}: unknown source ${o.import_source}`)
     assert.ok(o.import_id, `${o.name} has no import id`)
-    // Not blank and not guessed at: the association states no licence.
-    assert.equal(o.import_licence, 'unstated')
+    assert.equal(o.import_licence, LICENCES[o.import_source], `${o.name}`)
   }
+})
+
+test('OSM rows carry no guessed categories', () => {
+  // OSM has nothing that maps onto the association's categories. Inferring
+  // pick_your_own from a name containing "U-Pick" is exactly the sort of
+  // guess that puts a family in a car, so these arrive empty except where
+  // craft=cider says so outright.
+  for (const o of ORCHARDS.filter((x) => x.import_source === 'osm')) {
+    for (const t of o.tags) {
+      assert.equal(t, 'craft_cider', `${o.name} has an inferred tag: ${t}`)
+    }
+  }
+})
+
+test('coverage is honest about being uneven', () => {
+  // New York is thorough; everything else is OSM leftovers. If that ever
+  // inverts it is a bug in an importer, not good news.
+  const ny = ORCHARDS.filter((o) => o.state === 'NY').length
+  assert.ok(ny > ORCHARDS.length * 0.7, `NY is ${ny} of ${ORCHARDS.length}`)
 })
 
 test('websites are absolute https URLs when present', () => {

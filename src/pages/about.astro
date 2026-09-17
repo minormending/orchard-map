@@ -5,6 +5,14 @@ import { ORCHARDS } from '../lib/orchards'
 const upick = ORCHARDS.filter((o) => o.tags.includes('pick_your_own')).length
 const cider = ORCHARDS.filter((o) => o.tags.includes('craft_cider')).length
 const sites = ORCHARDS.filter((o) => o.website).length
+
+const byState = new Map<string, number>()
+for (const o of ORCHARDS) {
+  const key = o.state ?? '?'
+  byState.set(key, (byState.get(key) ?? 0) + 1)
+}
+const states = [...byState.entries()].sort((a, b) => b[1] - a[1])
+const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
 ---
 <Base
   title="About | Orchard Map"
@@ -38,6 +46,38 @@ const sites = ORCHARDS.filter((o) => o.website).length
     withdrawing the source would be one filter rather than an archaeology project.
   </p>
 
+  <h2>Coverage is uneven, and here is exactly how</h2>
+  <table class="facts">
+    <tbody>
+      {states.map(([state, n]) => (
+        <tr>
+          <th>{state}</th>
+          <td>
+            {n} {n === 1 ? 'listing' : 'listings'}
+            {state !== 'NY' && <span class="unknown"> — from OpenStreetMap only</span>}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <p>
+    New York is thorough because the state has a trade association that publishes a
+    member directory. The other states are {fromOsm} listings scraped out of
+    OpenStreetMap, which means they are pins with names and little else. That is a
+    gap in <em>our data</em>, not a shortage of orchards — please do not read a thin
+    state as a state without farms.
+  </p>
+  <p>
+    <strong>New Jersey is the worst of it.</strong> The state's own directory,
+    findjerseyfresh.com, serves <code>Disallow: /</code> to every crawler — the whole
+    site. That is a clear answer and it is respected; nothing here touches it. So New
+    Jersey depends on OpenStreetMap and on people adding farms themselves.
+  </p>
+  <p>
+    Connecticut and Pennsylvania both publish directories that would be usable. They
+    are simply not done yet.
+  </p>
+
   <h2>Greenmarkets are not on the map</h2>
   <p>
     The directory also lists 51 New York City greenmarket stalls — a folding table on
@@ -59,6 +99,24 @@ const sites = ORCHARDS.filter((o) => o.website).length
     two-hour drive with children in the car, and the only thing worse than a map
     that does not know is a map that pretends to.
   </p>
+
+  <h2>Licences</h2>
+  <p>
+    Every listing records where it came from and under what terms, so withdrawing a
+    source is one filter rather than an archaeology project.
+  </p>
+  <ul>
+    <li>
+      <strong>New York Apple Association</strong> — no licence stated. That is
+      ambiguity rather than permission, and it is recorded as <code>unstated</code>
+      rather than left blank or guessed at.
+    </li>
+    <li>
+      <strong>OpenStreetMap</strong> — <a href="https://opendatacommons.org/licenses/odbl/" rel="noreferrer">ODbL 1.0</a>,
+      which requires attribution and share-alike. The only rows here whose terms are
+      not a guess.
+    </li>
+  </ul>
 
   <h2>Source</h2>
   <p>
