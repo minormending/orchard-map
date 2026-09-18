@@ -3,7 +3,7 @@
  * OpenStreetMap, as a cross-reference rather than a roster.
  *
  *   node scripts/import-osm.mjs            dry run
- *   node scripts/import-osm.mjs --apply    merge into src/data/orchards.json
+ *   node scripts/import-osm.mjs --apply    add the new ones to the database
  *
  * Why this is second and not first: measured over this bounding box, OSM has
  * the pins and not the attributes. `self_harvesting=yes` — the tag that means
@@ -29,12 +29,11 @@
  * from OSM and from people adding farms themselves, and the About page says
  * so rather than letting the thin coverage look like an absence of farms.
  */
-import { readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { connect, loadRoster, addOrchards } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const OUT = join(ROOT, 'src', 'data', 'orchards.json')
 const UA = 'orchard-map/0.1 (+https://github.com/minormending/orchard-map; polite)'
 const APPLY = process.argv.includes('--apply')
 
@@ -183,7 +182,9 @@ async function overpass(query) {
 
 const { elements = [] } = await overpass(QUERY)
 
-const existing = JSON.parse(readFileSync(OUT, 'utf8'))
+/* From the table, not from the exported file — see lib/roster.mjs. */
+const client = await connect(ROOT, 'import-osm')
+const existing = await loadRoster(client)
 const bySlug = new Set(existing.map((o) => o.slug))
 
 const skipped = { notAppleish: 0, noPosition: 0, duplicate: 0, outside: 0 }
@@ -228,7 +229,6 @@ for (const el of elements) {
   const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ')
 
   added.push({
-    id: `osm-${el.type}-${el.id}`,
     slug,
     name,
     lat: Number(lat.toFixed(6)),
@@ -253,7 +253,6 @@ for (const el of elements) {
     // A real licence, unlike everything else in this file's sibling importer.
     // ODbL requires attribution, which the footer already carries for tiles.
     import_licence: 'ODbL-1.0',
-    imported_at: new Date().toISOString().slice(0, 10),
   })
 }
 
@@ -306,9 +305,18 @@ if (!APPLY) {
   for (const o of added.slice(0, 15)) {
     process.stderr.write(`    ${o.name} — ${o.town ?? '?'}, ${o.state ?? '?'}\n`)
   }
-  process.stderr.write('\ndry run — pass --apply to merge into src/data/orchards.json\n')
+  process.stderr.write('\ndry run — pass --apply to add them to the database\n')
 } else {
-  const merged = [...existing, ...added].sort((a, b) => a.slug.localeCompare(b.slug))
-  writeFileSync(OUT, JSON.stringify(merged, null, 2) + '\n')
-  process.stderr.write(`\nwrote ${merged.length} orchards to ${OUT}\n`)
+  const { inserted, skipped: already } = await addOrchards(client, added)
+  process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
+  for (const slug of inserted.slice(0, 15)) process.stderr.write(`    + ${slug}\n`)
+  if (inserted.length > 15) process.stderr.write(`    … and ${inserted.length - 15} more\n`)
+  if (already.length > 0) {
+    process.stderr.write(`\n${already.length} already present, which the duplicate check above should have caught\n`)
+  }
+  if (inserted.length > 0) {
+    process.stderr.write('\nrun `pnpm db:export -- --apply` to publish them to the site\n')
+  }
 }
+
+await client.end()
