@@ -3,7 +3,7 @@
  * Pennsylvania, from PA Preferred.
  *
  *   node scripts/import-papreferred.mjs              dry run
- *   node scripts/import-papreferred.mjs --apply      merge the clean ones
+ *   node scripts/import-papreferred.mjs --apply      add the clean ones to the database
  *   node scripts/import-papreferred.mjs --candidates write the unclear ones
  *
  * Pennsylvania has no working apple marketing board — pennsylvaniaapples.org
@@ -32,13 +32,13 @@
  * that work, and the dry run reports how many were dropped for it so the
  * number never looks like a parsing failure.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { inBox, matchExisting, slugify, normaliseUrl } from './lib/directory.mjs'
+import { connect, loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const OUT = join(ROOT, 'src', 'data', 'orchards.json')
 const CANDIDATES = join(ROOT, 'scripts', '.candidates')
 const UA = 'orchard-map/0.1 (+https://github.com/minormending/orchard-map; polite)'
 const HOST = 'https://papreferred.com'
@@ -212,7 +212,9 @@ process.stderr.write(
   `\n${seen.size} members returned, ${growers.length} listing apples as a product\n`,
 )
 
-const existing = JSON.parse(readFileSync(OUT, 'utf8'))
+/* From the table, not from the exported file — see lib/roster.mjs. */
+const client = await connect(ROOT, 'import-papreferred')
+const existing = await loadRoster(client)
 const clean = []
 const unclear = []
 let outsideBox = 0
@@ -273,13 +275,15 @@ if (WRITE_CANDIDATES) {
 }
 
 if (APPLY) {
-  const bySlug = new Set(existing.map((o) => o.slug))
-  const added = clean.map((c) => {
-    let slug = slugify(c.name, c.town)
-    if (bySlug.has(slug)) slug = `${slug}-pa`
-    bySlug.add(slug)
+  const taken = new Set(existing.map((o) => o.slug))
+  const rows = clean.map((c) => {
+    // The id is PA Preferred's identity for the farm; the slug is our URL, and
+    // only the slug carries a collision suffix. Keeping them apart is what
+    // makes next week's run recognise this row instead of re-offering it.
+    const base = slugify(c.name, c.town)
+    const slug = freeSlug(base, taken, 'pa')
+    taken.add(slug)
     return {
-      id: `papreferred-${slug}`,
       slug,
       name: c.name,
       lat: Number(c.lat.toFixed(6)),
@@ -295,14 +299,23 @@ if (APPLY) {
       // puts a family in a car.
       tags: [],
       import_source: 'papreferred',
-      import_id: slug,
+      import_id: base,
       import_licence: 'unstated',
-      imported_at: new Date().toISOString().slice(0, 10),
     }
   })
-  const merged = [...existing, ...added].sort((a, b) => a.slug.localeCompare(b.slug))
-  writeFileSync(OUT, JSON.stringify(merged, null, 2) + '\n')
-  process.stderr.write(`\nwrote ${merged.length} orchards to ${OUT}\n`)
+
+  const { inserted, skipped } = await addOrchards(client, rows)
+  process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
+  for (const slug of inserted) process.stderr.write(`    + ${slug}\n`)
+  if (skipped.length > 0) {
+    process.stderr.write(`\n${skipped.length} already present, which the checks above should have caught:\n`)
+    for (const slug of skipped) process.stderr.write(`    ? ${slug}\n`)
+  }
+  if (inserted.length > 0) {
+    process.stderr.write('\nrun `pnpm db:export -- --apply` to publish them to the site\n')
+  }
 } else if (!WRITE_CANDIDATES) {
-  process.stderr.write('\ndry run — --apply to merge, --candidates to write the unclear ones\n')
+  process.stderr.write('\ndry run — --apply to add them, --candidates to write the unclear ones\n')
 }
+
+await client.end()
