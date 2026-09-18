@@ -143,8 +143,36 @@ ${exported.length} active orchards from the database
   new: ${added.length}
 `)
 
+/*
+ * Removing a farm is not a routine export.
+ *
+ * This file is generated, so the export is entitled to overwrite it — but a
+ * row disappearing means a farm that was on the map yesterday is not on it
+ * today, and the reasons for that divide sharply. Hiding one deliberately is
+ * ordinary. Its row having been deleted from the table by mistake is not, and
+ * the two look identical from here: the query simply returns one fewer row.
+ *
+ * On 2026-09-18 three Connecticut farms were deleted from the table as
+ * duplicates they were not, and the next export would have taken them off the
+ * site. The count was printed in the summary above, exactly as designed, and
+ * that was not enough — a number in a report is only a safeguard for somebody
+ * who reads it, and this export usually runs in the middle of a longer job.
+ *
+ * So it stops instead, and names them. Passing --allow-removals is how you say
+ * you meant it.
+ */
+const ALLOW_REMOVALS = process.argv.includes('--allow-removals')
+
 if (!APPLY) {
   process.stderr.write('dry run — pass --apply to write src/data/orchards.json\n')
+} else if (gone.length > 0 && !ALLOW_REMOVALS) {
+  process.stderr.write(
+    `refusing to write: ${gone.length} ${gone.length === 1 ? 'farm' : 'farms'} would come off the map\n\n` +
+    gone.map((g) => `    ${g.name} (${g.slug})`).join('\n') + '\n\n' +
+    'If they were hidden on purpose, pass --allow-removals.\n' +
+    'If not, they are missing from the orchards table and want restoring first.\n',
+  )
+  process.exit(1)
 } else {
   writeFileSync(OUT, JSON.stringify(exported, null, 2) + '\n')
   process.stderr.write(`wrote ${OUT}\n`)

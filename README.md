@@ -98,6 +98,32 @@ node scripts/import-ctapples.mjs       # Connecticut
 node scripts/import-papreferred.mjs    # Pennsylvania
 ```
 
+### Which way the data flows
+
+`src/data/orchards.json` is a **build artifact**. `export-data.mjs` regenerates
+it from the `orchards` table, filtered to `status = 'active'`, and the site
+builds from the file. So the direction is one way:
+
+```
+directories ──▶ importers ──▶ orchards table ──▶ export-data.mjs ──▶ src/data/orchards.json ──▶ site
+```
+
+Editing the file directly works right up until the next export, which reverts
+it — and the two state importers used to do exactly that, so a farm they added
+lasted until somebody ran the export and was then silently dropped. That cost
+three real Connecticut farms on 2026-09-18. Both now add to the table, and the
+export refuses to write when a farm would come off the map:
+
+```bash
+node scripts/import-ctapples.mjs --apply   # adds to the database
+pnpm db:export -- --apply                  # publishes them to the file
+```
+
+The exceptions are `import-nyaa.mjs` and `import-osm.mjs`, which still write
+the file because they are seeding tools: their output goes to the table through
+`seed-to-sql.mjs`. If you use them, run that too, or the next export undoes
+your work.
+
 Every importer is a dry run by default and shares one set of placement rules
 in `scripts/lib/directory.mjs` — geocoding, the day-trip box, and the
 duplicate checks. Shared rather than copied because those rules took several
