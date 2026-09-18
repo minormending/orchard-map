@@ -207,7 +207,11 @@ for (const r of records) {
   const at = await place(
     { name: r.name, address: r.address, town: r.town, state: 'CT', zip: r.zip },
     existing,
-    { userAgent: UA, source: 'ctapples' },
+    // The import key, so a re-run recognises its own rows exactly rather than
+    // by resemblance. A row that took the `-ct` collision suffix below will
+    // not match and will be reported as needing a look — wrong, but visibly
+    // wrong, which is the direction this should fail in.
+    { userAgent: UA, source: 'ctapples', importId: slugify(r.name, r.town) },
   )
   if (at.quiet) { alreadyKnown++; continue }
   if (!at.ok) {

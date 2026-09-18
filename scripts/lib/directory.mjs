@@ -38,13 +38,31 @@ export const normName = (s) =>
     .replace(/\s+/g, ' ').trim()
 
 /**
- * Are these plausibly the same business?
+ * How close two rows must be before a shared name means a shared business.
+ *
+ * Looser than NEAR_M because a geocoder placing a named farm can land at the
+ * end of its drive or at the road it is addressed from, and a name match has
+ * already done most of the work. Tighter than the distance between two sites
+ * of one business: Bishop's Orchards keeps Guilford and Northford eight miles
+ * apart, and those are two rows on this map, correctly.
+ */
+export const NAME_MATCH_M = 2000
+
+/** How close two rows must be before position alone raises a question. */
+export const NEAR_M = 600
+
+/**
+ * Are these plausibly the same business, by NAME ALONE?
  *
  * Requiring the FIRST distinctive token to agree is what separates a shared
- * common noun from a shared name. Family names are extremely common in this
- * trade — Rose Orchards in North Branford and Rose Hill Farm in Red Hook are
- * ninety miles apart and unrelated — so this deliberately only raises a
- * question rather than deciding anything.
+ * common noun from a shared name. It is not enough on its own, and callers
+ * must not use it as though it were: family names are extremely common in
+ * this trade, and with the generic words stripped "Rose Orchards" becomes
+ * `rose`, which is a prefix of "Rose Hill Farm" -> `rose hill`. Those two are
+ * ninety miles apart in different states.
+ *
+ * Pair it with a distance bound. `matchExisting` is that pairing, and is what
+ * importers should call.
  */
 export function sameBusiness(a, b) {
   const x = normName(a)
@@ -107,14 +125,81 @@ export async function geocode(query, { userAgent, delayMs = 1100 } = {}) {
 }
 
 /**
+ * Have we got this listing already, and if not, does it need a person?
+ *
+ * Returns `null` when the listing is new and clean, `{ quiet: true }` when it
+ * is one this importer has already added, and `{ reason, duplicate_of }` when
+ * something wants a human eye. It never decides to drop something — a reason
+ * is an invitation to look, not a verdict.
+ *
+ * Both importers call this. Pennsylvania used to carry its own copy of these
+ * rules, because it gets coordinates from the directory and so cannot use
+ * `place()`, which geocodes. The file header warned that a second copy would
+ * be a second place for the rules to drift, and it was: both copies grew the
+ * same two faults, and on 2026-09-18 three real Connecticut farms were deleted
+ * as duplicates because of them.
+ */
+export function matchExisting(listing, at, existing, opts = {}) {
+  const { source, importId } = opts
+
+  /*
+   * Identity first, and exactly.
+   *
+   * A row this importer already added is not a finding, it is the importer
+   * being idempotent — without that, the second run of a weekly job reports
+   * every listing it has ever imported, 43 of them every Monday, and a report
+   * that cries wolf forty-three times is a report nobody reads.
+   *
+   * But it has to be the SAME row, matched on the key the importer writes,
+   * not on resemblance. Keying it off the fuzzy matchers meant a genuinely new
+   * farm that merely looked like one we had was reported as "already imported
+   * from this source" and vanished from the candidates file — invisible to the
+   * review that exists to catch exactly this. Belltown Hill Orchards sat 600m
+   * from Rose's Berry Farm and disappeared that way.
+   */
+  if (source && importId) {
+    const mine = existing.find(
+      (o) => o.import_source === source && o.import_id === importId,
+    )
+    if (mine) return { quiet: true, reason: 'already imported from this source' }
+  }
+
+  /*
+   * A shared name only means a shared business at a shared place. Farms in
+   * this trade are named after families, and two unrelated ones a hundred
+   * miles apart are the normal case rather than the exotic one.
+   */
+  const sameName = existing.find(
+    (o) => sameBusiness(o.name, listing.name) && distanceM(o, at) < NAME_MATCH_M,
+  )
+  if (sameName) {
+    return {
+      reason: `same name as one we have: ${sameName.name}`,
+      duplicate_of: sameName.slug,
+    }
+  }
+
+  // Weaker than a name match and worth separating: two real farms can share a
+  // village, and a geocoder falling back to the town centre puts both on the
+  // same point.
+  const near = existing.find((o) => distanceM(o, at) < NEAR_M)
+  if (near) {
+    return {
+      reason: `within ${NEAR_M}m of ${near.name} — same farm, or the geocoder gave up on both?`,
+      duplicate_of: near.slug,
+    }
+  }
+
+  return null
+}
+
+/**
  * Place one listing: geocode it, box it, and check it against what we have.
  *
- * Returns either `{ ok: true, ...position }` or `{ ok: false, reason }`. It
- * never decides to drop something — a reason is an invitation for a person to
- * look, not a verdict.
+ * Returns either `{ ok: true, ...position }` or `{ ok: false, reason }`.
  */
 export async function place(listing, existing, opts) {
-  const { userAgent, source } = opts
+  const { userAgent, source, importId } = opts
   const where = [listing.address, listing.town, listing.state, listing.zip]
     .filter(Boolean).join(', ')
 
@@ -128,39 +213,8 @@ export async function place(listing, existing, opts) {
     return { ok: false, ...at, reason: 'outside the day-trip box', quiet: true }
   }
 
-  const sameName = existing.find((o) => sameBusiness(o.name, listing.name))
-  if (sameName) {
-    /*
-     * A match against a row this same importer already added is not a finding,
-     * it is the importer being idempotent. Without this, the second run of a
-     * weekly job reports every listing it has ever imported as a possible
-     * duplicate — 43 of them, every Monday — and a report that cries wolf
-     * forty-three times is a report nobody reads.
-     */
-    if (source && sameName.import_source === source) {
-      return { ok: false, quiet: true, reason: 'already imported from this source' }
-    }
-    return {
-      ok: false, ...at,
-      reason: `same name as one we have: ${sameName.name}`,
-      duplicate_of: sameName.slug,
-    }
-  }
-
-  const near = existing.find((o) => distanceM(o, at) < 600)
-  if (near) {
-    if (source && near.import_source === source) {
-      return { ok: false, quiet: true, reason: 'already imported from this source' }
-    }
-    // Weaker than a name match and worth separating: two real farms can share
-    // a village, and a geocoder falling back to the town centre puts both on
-    // the same point.
-    return {
-      ok: false, ...at,
-      reason: `within 600m of ${near.name} — same farm, or the geocoder gave up on both?`,
-      duplicate_of: near.slug,
-    }
-  }
+  const hit = matchExisting(listing, at, existing, { source, importId })
+  if (hit) return { ok: false, ...at, ...hit }
 
   return { ok: true, ...at }
 }

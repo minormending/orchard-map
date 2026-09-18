@@ -1,28 +1,8 @@
 {
   "source": "https://ctapples.org/find-a-farm/",
-  "fetched_at": "2026-09-18T12:05:03.542Z",
+  "fetched_at": "2026-09-18T16:16:32.680Z",
   "clean": [],
   "unclear": [
-    {
-      "name": "Belltown Hill Orchards, LLC",
-      "town": "South Glastonbury",
-      "state": "CT",
-      "zip": "06073",
-      "address": "483 Matson Hill Road",
-      "phone": "860-633-2789",
-      "website": "https://www.belltownhillorchards.com",
-      "tags": [
-        "pick_your_own",
-        "fresh_cider",
-        "farm_market"
-      ],
-      "county": "Hartford",
-      "source": "https://ctapples.org/find-a-farm/",
-      "lat": 41.6515706,
-      "lng": -72.5771203,
-      "reason": "within 600m of Rose's Berry Farm — same farm, or the geocoder gave up on both?",
-      "duplicate_of": "rose-s-berry-farm-glastonbury"
-    },
     {
       "name": "Rogers Orchards-Sunnymount Farm",
       "town": "Southington",
@@ -51,38 +31,6 @@
       "lng": -72.5809829,
       "reason": "same name as one we have: Rose's Berry Farm",
       "duplicate_of": "rose-s-berry-farm-glastonbury"
-    },
-    {
-      "name": "Rose Orchards",
-      "town": "North Branford",
-      "state": "CT",
-      "zip": "06471",
-      "address": "33 Branford Road",
-      "phone": "203-488-7996",
-      "website": null,
-      "tags": [],
-      "county": "New Haven",
-      "source": "https://ctapples.org/find-a-farm/",
-      "lat": 41.316132,
-      "lng": -72.7836299,
-      "reason": "same name as one we have: Rose Hill Farm",
-      "duplicate_of": "rose-hill-farm-red-hook"
-    },
-    {
-      "name": "Wright's Orchard & Dried Flower Farm",
-      "town": "Tolland",
-      "state": "CT",
-      "zip": "06084",
-      "address": "271 South River Road",
-      "phone": "860-872-1665",
-      "website": "https://www.wrightsorchard.com",
-      "tags": [],
-      "county": "Tolland",
-      "source": "https://ctapples.org/find-a-farm/",
-      "lat": 41.8662315,
-      "lng": -72.3113343,
-      "reason": "same name as one we have: Wright Farms",
-      "duplicate_of": "wright-farms-gardiner"
     },
     {
       "name": "Lapsley Orchard",

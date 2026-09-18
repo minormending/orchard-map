@@ -35,7 +35,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { inBox, sameBusiness, distanceM, slugify, normaliseUrl } from './lib/directory.mjs'
+import { inBox, matchExisting, slugify, normaliseUrl } from './lib/directory.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = join(ROOT, 'src', 'data', 'orchards.json')
@@ -228,23 +228,18 @@ for (const g of growers) {
   if (!inBox(g.lat, g.lng)) { outsideBox++; continue }
 
   /*
-   * A match against a row this importer already added is the importer being
-   * idempotent, not a finding. Connecticut got this fix when its second run
-   * reported all 43 of its own imports as possible duplicates; Pennsylvania
-   * did not, because it does its own placement rather than calling place() —
-   * the site publishes coordinates, so there is no geocoding to share. The
-   * first scheduled run duly reported 14 of its own farms back at us.
+   * One rule, shared with Connecticut. This used to be a hand copy of what
+   * place() does, because the site publishes coordinates and so there is no
+   * geocoding to share — and the copy drifted exactly as the shared file's
+   * header predicted it would.
    */
-  const sameName = existing.find((o) => sameBusiness(o.name, g.name))
-  if (sameName) {
-    if (sameName.import_source === 'papreferred') { alreadyKnown++; continue }
-    unclear.push({ ...base, reason: `same name as one we have: ${sameName.name}`, duplicate_of: sameName.slug })
-    continue
-  }
-  const near = existing.find((o) => distanceM(o, g) < 600)
-  if (near) {
-    if (near.import_source === 'papreferred') { alreadyKnown++; continue }
-    unclear.push({ ...base, reason: `within 600m of ${near.name}`, duplicate_of: near.slug })
+  const hit = matchExisting(g, g, existing, {
+    source: 'papreferred',
+    importId: slugify(g.name, g.town),
+  })
+  if (hit?.quiet) { alreadyKnown++; continue }
+  if (hit) {
+    unclear.push({ ...base, reason: hit.reason, duplicate_of: hit.duplicate_of })
     continue
   }
   clean.push(base)
