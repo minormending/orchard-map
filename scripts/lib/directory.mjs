@@ -139,29 +139,34 @@ export async function geocode(query, { userAgent, delayMs = 1100 } = {}) {
  * same two faults, and on 2026-09-18 three real Connecticut farms were deleted
  * as duplicates because of them.
  */
+/**
+ * Is this a row this importer already added?
+ *
+ * Identity, and exactly. A row this importer already added is not a finding,
+ * it is the importer being idempotent — without that, the second run of a
+ * weekly job reports every listing it has ever imported, 43 of them every
+ * Monday, and a report that cries wolf forty-three times is a report nobody
+ * reads.
+ *
+ * But it has to be the SAME row, matched on the key the importer writes, not
+ * on resemblance. Keying it off the fuzzy matchers meant a genuinely new farm
+ * that merely looked like one we had was reported as "already imported from
+ * this source" and vanished from the candidates file — invisible to the review
+ * that exists to catch exactly this. Belltown Hill Orchards sat 600m from
+ * Rose's Berry Farm and disappeared that way.
+ */
+export function alreadyImported(existing, source, importId) {
+  if (!source || !importId) return false
+  return existing.some(
+    (o) => o.import_source === source && o.import_id === importId,
+  )
+}
+
 export function matchExisting(listing, at, existing, opts = {}) {
   const { source, importId } = opts
 
-  /*
-   * Identity first, and exactly.
-   *
-   * A row this importer already added is not a finding, it is the importer
-   * being idempotent — without that, the second run of a weekly job reports
-   * every listing it has ever imported, 43 of them every Monday, and a report
-   * that cries wolf forty-three times is a report nobody reads.
-   *
-   * But it has to be the SAME row, matched on the key the importer writes,
-   * not on resemblance. Keying it off the fuzzy matchers meant a genuinely new
-   * farm that merely looked like one we had was reported as "already imported
-   * from this source" and vanished from the candidates file — invisible to the
-   * review that exists to catch exactly this. Belltown Hill Orchards sat 600m
-   * from Rose's Berry Farm and disappeared that way.
-   */
-  if (source && importId) {
-    const mine = existing.find(
-      (o) => o.import_source === source && o.import_id === importId,
-    )
-    if (mine) return { quiet: true, reason: 'already imported from this source' }
+  if (alreadyImported(existing, source, importId)) {
+    return { quiet: true, reason: 'already imported from this source' }
   }
 
   /*
@@ -194,18 +199,147 @@ export function matchExisting(listing, at, existing, opts = {}) {
 }
 
 /**
+ * A route number the directories write into a street line.
+ *
+ * `Rte. 169`, `Rt. 322`, `Route 6A`, `US 44`, `Hwy 10` — the prefix is what
+ * makes it a route rather than a house number, so plain `322 Main Street`
+ * cannot match this and cannot lose its number.
+ */
+const ROUTE = String.raw`(?:rtes?|rt|route|state\s+(?:route|hwy|highway)|us|hwy|highway)\.?\s*\d+[a-z]?`
+
+/**
+ * The street line as a geocoder can use it.
+ *
+ * State directories write addresses for somebody driving there, not for a
+ * parser: a route number bracketed after the street, an `off Rte. 101` tacked
+ * on the end, a route designator standing in front of a road that has a name
+ * of its own. Photon takes the whole string literally, finds nothing, and the
+ * farm lands in `unclear` as `could not be geocoded` — every week, for the
+ * same three Connecticut farms, since none of them is ever added and so none
+ * of them ever stops being a candidate.
+ *
+ * This only ever SHORTENS the query, and only when something is left to send:
+ * an address that is nothing but a route number is one the geocoder should
+ * see whole rather than emptied. The stored address is untouched — this is a
+ * query, not a correction, and `403 Orchard Hill Road (Rte. 169)` is how the
+ * farm tells people to find it.
+ */
+export function streetForGeocoder(raw) {
+  if (!raw) return raw
+  const original = String(raw).trim()
+  let s = original
+
+  // "403 Orchard Hill Road (Rte. 169)" — the aside is for a driver.
+  s = s.replace(new RegExp(String.raw`\s*\(\s*${ROUTE}\s*\)`, 'gi'), '')
+
+  // "1393 North Road, off Rte. 101" — so is the tail, and everything after it.
+  s = s.replace(
+    new RegExp(String.raw`\s*,?\s*\b(?:just\s+)?(?:off|on|at|near)\s+(?:the\s+)?${ROUTE}\b.*$`, 'i'),
+    '',
+  )
+
+  // "Rt. 322 Meriden-Waterbury Road" — the road has a name; the route number
+  // in front of it is what defeats the lookup. Requires something to follow,
+  // so a bare "Rt. 322" survives intact.
+  s = s.replace(new RegExp(String.raw`^${ROUTE}\s+(?=\S)`, 'i'), '')
+
+  s = s.replace(/\s+/g, ' ').replace(/^[,\s]+|[,\s]+$/g, '')
+  return s || original
+}
+
+/**
+ * How near the town centroid a result has to be before it is not an address.
+ *
+ * Tight on purpose. A farm genuinely standing on the locality's centre point
+ * to within 60m is not a thing that happens in rural Connecticut, and being
+ * tight means a real address is never discarded for being central.
+ */
+export const TOWN_CENTRE_M = 60
+
+/** One lookup per town, not per listing. */
+const townCentres = new Map()
+
+async function isTownCentre(at, listing, { userAgent }) {
+  if (!listing.town) return false
+  const key = `${listing.town}, ${listing.state ?? ''}`
+  if (!townCentres.has(key)) {
+    townCentres.set(key, await geocode(key, { userAgent }))
+  }
+  const centre = townCentres.get(key)
+  return centre !== null && centre !== undefined &&
+    distanceM(centre, at) < TOWN_CENTRE_M
+}
+
+/**
  * Place one listing: geocode it, box it, and check it against what we have.
  *
  * Returns either `{ ok: true, ...position }` or `{ ok: false, reason }`.
  */
 export async function place(listing, existing, opts) {
   const { userAgent, source, importId } = opts
-  const where = [listing.address, listing.town, listing.state, listing.zip]
-    .filter(Boolean).join(', ')
 
-  let at = listing.address ? await geocode(where, { userAgent }) : null
-  if (!at) {
-    at = await geocode(`${listing.name}, ${listing.town}, ${listing.state}`, { userAgent })
+  /*
+   * Ask who this is before asking where it is.
+   *
+   * This used to geocode first and check identity afterwards, which had two
+   * costs. A row we already own reported as "could not be geocoded" whenever
+   * Photon had a bad day — Starberry Farm resolved on one run and not the next
+   * with nothing changed between them — so the weekly report moved around for
+   * reasons that had nothing to do with the directory. And every one of the 39
+   * Connecticut farms we already hold paid for a lookup, one a second, to
+   * establish something the import id already answered.
+   */
+  if (alreadyImported(existing, source, importId)) {
+    return { ok: false, quiet: true, reason: 'already imported from this source' }
+  }
+
+  const here = (street) =>
+    [street, listing.town, listing.state, listing.zip].filter(Boolean).join(', ')
+
+  /*
+   * The address as written first, the stripped-down street only if that fails.
+   *
+   * The strip was nearly done the other way round, and that would have cost
+   * more than it bought: Photon is an autocomplete, and "185 West Road
+   * (Rte. 83)" finds Johnny Appleseed Farm while "185 West Road" finds
+   * nothing. The route number is noise to a parser and a clue to a fuzzy
+   * matcher, and which one it is cannot be known in advance.
+   *
+   * Asking in this order means every lookup that worked before still resolves
+   * exactly as it did, and the second query is only ever spent on a listing
+   * that was otherwise about to be reported as unplaceable.
+   */
+  const queries = []
+  if (listing.address) {
+    const raw = String(listing.address).trim()
+    const street = streetForGeocoder(raw)
+    queries.push(here(raw))
+    if (street && street !== raw) queries.push(here(street))
+  }
+  queries.push(`${listing.name}, ${listing.town}, ${listing.state}`)
+
+  let at = null
+  for (const q of queries) {
+    at = await geocode(q, { userAgent })
+    if (at && await isTownCentre(at, listing, { userAgent })) {
+      /*
+       * Photon answers with the locality when it cannot find the street, and
+       * a locality centroid is a confident-looking wrong answer — the worst
+       * kind this project can publish, because the page prints it as a pin
+       * and the directions link sends people to the coordinate rather than
+       * the name.
+       *
+       * Defazzio Orchard is why this exists. Its address is "1393 North Road,
+       * off Rte. 101"; strip the tail and Photon returns the centre of East
+       * Killingly, byte-identical to querying the bare town. Adding the
+       * stripped-street query above made three unplaceable farms placeable
+       * and gave this one a pin in the wrong place, which is a worse outcome
+       * than the failure it replaced.
+       */
+      at = null
+      continue
+    }
+    if (at) break
   }
   if (!at) return { ok: false, reason: 'could not be geocoded' }
 
