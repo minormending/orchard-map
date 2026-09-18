@@ -1,0 +1,15 @@
+Also adds three reviewed Connecticut rows from the 2026-09-18 discovery run,
+which were staged into this commit by accident rather than by intent:
+
+  belltown-hill-orchards-llc-south-glastonbury
+  rose-orchards-north-branford
+  wright-s-orchard-dried-flower-farm-tolland
+
+All three came from ctapples.org and had been held in scripts/.candidates/ as
+unclear — two name collisions against unrelated farms in other states, one pin
+landing 520m from Rose's Berry Farm on the same road. Reviewed and merged in
+the row shape import-ctapples.mjs --apply produces. 248 -> 251 orchards.
+
+Three further CT listings from the same run are still unmerged, having no
+position anyone can stand behind: Lapsley Orchard, Defazzio Orchard and
+Greenhouses, and Rogers Orchards-Sunnymount Farm.
