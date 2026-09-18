@@ -2,8 +2,8 @@
 /**
  * The roster, from the New York Apple Association.
  *
- *   node scripts/import-nyaa.mjs            dry run — says what it would write
- *   node scripts/import-nyaa.mjs --apply    write src/data/orchards.json
+ *   node scripts/import-nyaa.mjs            dry run — says what it would add
+ *   node scripts/import-nyaa.mjs --apply    add the new ones to the database
  *
  * Why this source and not OpenStreetMap: OSM has the pins but not the
  * attributes. Measured over the day-trip bounding box, `self_harvesting=yes` —
@@ -33,9 +33,9 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { connect, loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const OUT = join(ROOT, 'src', 'data', 'orchards.json')
 const CACHE = join(ROOT, 'scripts', '.cache')
 
 const UA = 'orchard-map/0.1 (+https://github.com/minormending/orchard-map; polite)'
@@ -248,7 +248,6 @@ function toOrchard(row, meta) {
   if (tags.length === 1 && tags[0] === 'greenmarket') return null
 
   return {
-    id: `nyaa-${row.id}`,
     slug: slugify(name, town),
     name,
     lat: Number(lat.toFixed(6)),
@@ -268,7 +267,6 @@ function toOrchard(row, meta) {
     import_source: 'nyaa',
     import_id: String(row.id),
     import_licence: 'unstated',
-    imported_at: new Date().toISOString().slice(0, 10),
   }
 }
 
@@ -302,14 +300,24 @@ for (const [id, row] of found) {
 // Stable order, so a re-import produces a readable diff rather than a reshuffle.
 orchards.sort((a, b) => a.slug.localeCompare(b.slug))
 
-// A slug collision would make two orchards share a URL. Disambiguate with the
-// import id rather than dropping one.
-const seen = new Map()
+/*
+ * A slug collision would make two orchards share a URL. Disambiguate with the
+ * import id rather than dropping one — and check against what the table
+ * already holds, not just against this batch, because the map now carries
+ * Connecticut and Pennsylvania farms this importer knows nothing about.
+ */
+const client = await connect(ROOT, 'import-nyaa')
+const existing = await loadRoster(client)
+const taken = new Set(existing.map((o) => o.slug))
+const mine = new Set(existing.filter((o) => o.import_source === 'nyaa').map((o) => o.import_id))
 for (const o of orchards) {
-  const n = (seen.get(o.slug) ?? 0) + 1
-  seen.set(o.slug, n)
-  if (n > 1) o.slug = `${o.slug}-${o.import_id}`
+  if (mine.has(o.import_id)) continue
+  o.slug = freeSlug(o.slug, taken, o.import_id)
+  taken.add(o.slug)
 }
+
+/* Rows we do not already hold. The rest are reported, not re-sent. */
+const fresh = orchards.filter((o) => !mine.has(o.import_id))
 
 const counts = {}
 for (const o of orchards) for (const t of o.tags) counts[t] = (counts[t] ?? 0) + 1
@@ -323,10 +331,24 @@ kept  ${orchards.length} inside the day-trip box
 ${Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, v]) => `    ${String(v).padStart(4)}  ${k}`).join('\n')}
 `)
 
+process.stderr.write(`  already in the database: ${orchards.length - fresh.length}\n  new: ${fresh.length}\n`)
+
 if (!APPLY) {
-  process.stderr.write('\ndry run — pass --apply to write src/data/orchards.json\n')
+  for (const o of fresh.slice(0, 15)) {
+    process.stderr.write(`    ${o.name} — ${o.town ?? '?'}\n`)
+  }
+  process.stderr.write('\ndry run — pass --apply to add them to the database\n')
 } else {
-  mkdirSync(dirname(OUT), { recursive: true })
-  writeFileSync(OUT, JSON.stringify(orchards, null, 2) + '\n')
-  process.stderr.write(`\nwrote ${OUT}\n`)
+  const { inserted, skipped: already } = await addOrchards(client, fresh)
+  process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
+  for (const slug of inserted.slice(0, 15)) process.stderr.write(`    + ${slug}\n`)
+  if (inserted.length > 15) process.stderr.write(`    … and ${inserted.length - 15} more\n`)
+  if (already.length > 0) {
+    process.stderr.write(`\n${already.length} already present, which the check above should have caught\n`)
+  }
+  if (inserted.length > 0) {
+    process.stderr.write('\nrun `pnpm db:export -- --apply` to publish them to the site\n')
+  }
 }
+
+await client.end()

@@ -82,8 +82,8 @@ Every row records `import_source`, `import_id` and `import_licence`, so
 withdrawing a source is one filter rather than an archaeology project.
 
 ```bash
-node scripts/import-nyaa.mjs            # dry run, says what it would write
-node scripts/import-nyaa.mjs --apply    # writes src/data/orchards.json
+node scripts/import-nyaa.mjs            # dry run, says what it would add
+node scripts/import-nyaa.mjs --apply    # adds to the database
 node scripts/import-nyaa.mjs --fresh    # ignore the local cache
 ```
 
@@ -92,7 +92,7 @@ subdivides any cell that comes back saturated.
 
 ```bash
 node scripts/import-osm.mjs            # dry run
-node scripts/import-osm.mjs --apply    # merge OSM's leftovers in
+node scripts/import-osm.mjs --apply    # add OSM's leftovers
 
 node scripts/import-ctapples.mjs       # Connecticut
 node scripts/import-papreferred.mjs    # Pennsylvania
@@ -109,9 +109,9 @@ directories ──▶ importers ──▶ orchards table ──▶ export-data.m
 ```
 
 Editing the file directly works right up until the next export, which reverts
-it — and the two state importers used to do exactly that, so a farm they added
-lasted until somebody ran the export and was then silently dropped. That cost
-three real Connecticut farms on 2026-09-18. Both now add to the table, and the
+it — and every importer used to do exactly that, so a farm they added lasted
+until somebody ran the export and was then silently dropped. That cost three
+real Connecticut farms on 2026-09-18. All four now add to the table, and the
 export refuses to write when a farm would come off the map:
 
 ```bash
@@ -119,10 +119,10 @@ node scripts/import-ctapples.mjs --apply   # adds to the database
 pnpm db:export -- --apply                  # publishes them to the file
 ```
 
-The exceptions are `import-nyaa.mjs` and `import-osm.mjs`, which still write
-the file because they are seeding tools: their output goes to the table through
-`seed-to-sql.mjs`. If you use them, run that too, or the next export undoes
-your work.
+`seed-to-sql.mjs` turns the exported file back into SQL, which is how a fresh
+database gets seeded. It upserts roster fields only — never the hours, prices
+and varieties the reader earns — so re-seeding cannot flatten what a farm's own
+website said.
 
 Every importer is a dry run by default and shares one set of placement rules
 in `scripts/lib/directory.mjs` — geocoding, the day-trip box, and the
