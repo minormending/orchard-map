@@ -33,6 +33,9 @@
       "farm_market",
       "heirloom"
     ],
+    "hours": "Monday 4:00pm - 8:00pm. Tuesday 4:00pm - 8:00pm. Wednesday 4:00pm - 9:00pm. Thursday 4:00pm - 10:00pm. Friday 3:00pm - 10:00pm. Saturday 12:00pm - 10:00pm. Sunday 12:00pm - 8:00pm",
+    "checked_at": "2026-09-18T12:08:44.903Z",
+    "source_url": "https://twowaybrewing.com/visit-us/",
     "import_source": "nyaa",
     "import_id": "4893",
     "import_licence": "unstated",
@@ -96,6 +99,10 @@
       "gift_boxes",
       "pick_your_own"
     ],
+    "hours": "PICK YOUR OWN APPLES: Weekends and Holidays 10 to 4 only. No weekday picking is offered. (Store Hours: Weekends 9:30 to 5 : Weekdays 9:30 to 6 pm)",
+    "admission": "Peck Bag $17. Half Bushel Bag $32.00 or 3 or more 1/2 bushels, bags $30 each",
+    "checked_at": "2026-09-18T12:08:44.903Z",
+    "source_url": "https://altamontorchards.com/pick-your-own/",
     "import_source": "nyaa",
     "import_id": "3439",
     "import_licence": "unstated",
@@ -171,6 +178,10 @@
       "fresh_cider",
       "pick_your_own"
     ],
+    "hours": "SEASON hours: Apple harvest is in September and October. We are open seven days a week 9:00 - 5:00 Weekends, 12:00 - 5:00 Weekdays",
+    "admission": "Admission is $5 per person on weekends - free on non-holiday weekdays. If you wish to pick apples you buy a picking bag at the farm store. A half peck bag of apples is $15, and a peck bag of apples is $30.",
+    "checked_at": "2026-09-18T12:08:44.903Z",
+    "source_url": "https://www.appledavesorchards.com/apple-picking",
     "import_source": "nyaa",
     "import_id": "3889",
     "import_licence": "unstated",
@@ -217,7 +228,8 @@
     ],
     "upick_open": true,
     "hours": "Thursday-Sunday, 9am to 6pm. Open all holidays – Labor Day (9/7), Rosh Hashanah (9/12-9/13), Yum Kippur (9/21), Columbus Day (10/12) – from 9:00am – 6:00pm.",
-    "checked_at": "2026-09-17T16:32:57.886Z",
+    "admission": "General Admission: $3 per person (Age 2 and over), includes Free Parking and Entrance to the Apple Orchard, Petting Zoo, Play Area, and Farm Stand. +$40 for each 1/2 bushel of apples. +$25 for each 1/4 bushel of apples. Admission and PYO cash only.",
+    "checked_at": "2026-09-18T15:31:31.548Z",
     "source_url": "https://appleridgeorchards.com/pick-your-own-apples/",
     "varieties": [
       "gala",
@@ -274,6 +286,11 @@
     "phone": "860-868-2777",
     "website": "https://www.averillfarm.com",
     "tags": [],
+    "upick_open": true,
+    "hours": "Open 9:30-5:30 daily",
+    "admission": "The 2026 prices are: 1/2 peck (about 5 lbs) $14, 1 peck (about 10 lbs) $26, 1/2 bushel (about 20 lbs) $44",
+    "checked_at": "2026-09-18T15:31:31.548Z",
+    "source_url": "https://www.averillfarm.com/stand-and-orchard-information",
     "import_source": "ctapples",
     "import_id": "averill-farm-washington-depot",
     "import_licence": "unstated",
@@ -332,8 +349,9 @@
     "tags": [
       "craft_cider"
     ],
+    "hours": "Saturday - Taproom: 12pm - 8pm, Kitchen: 12pm - 7pm. Sunday - Taproom: 12pm - 7pm, Kitchen: 12pm - 6:30pm",
     "reservations_required": false,
-    "checked_at": "2026-09-17T16:32:57.886Z",
+    "checked_at": "2026-09-18T12:08:44.903Z",
     "source_url": "https://www.badseedhardcider.com/taproom",
     "import_source": "nyaa",
     "import_id": "3459",
@@ -395,7 +413,7 @@
       "farm_market"
     ],
     "hours": "Monday - Saturday: 7:00am-6:30pm Sunday: 8:00am-6:00pm",
-    "checked_at": "2026-09-17T16:32:57.886Z",
+    "checked_at": "2026-09-18T15:31:31.548Z",
     "source_url": "https://www.bartonorchards.com/the-apple-core/",
     "import_source": "nyaa",
     "import_id": "3468",
@@ -418,9 +436,9 @@
       "farm_market",
       "pick_your_own"
     ],
-    "hours": "Monday: 11:00 AM – 6:00 PM; Tuesday: 12:00 PM – 6:00 PM; Wednesday: 12:00 PM – 6:00 PM; Thursday: 12:00 PM – 6:00 PM; Friday: 12:00 PM – 9:00 PM; Saturday: 11:00 AM – 9:00 PM; Sunday: 11:00 AM – 6:00 PM",
-    "admission": "$25/Peck (~10 lbs)",
-    "checked_at": "2026-09-17T16:32:57.886Z",
+    "hours": "Farm Hours of Operation Monday: 11:00 AM – 6:00 PM Tuesday: 12:00 PM – 6:00 PM Wednesday: 12:00 PM – 6:00 PM Thursday: 12:00 PM – 6:00 PM Friday: 12:00 PM – 9:00 PM Saturday: 11:00 AM – 9:00 PM Sunday: 11:00 AM – 6:00 PM",
+    "admission": "Apple Bags can be purchased at the Apple Shack, $25/Peck (~10 lbs). Admission to the farm is free, except during weekend festivals and select holiday weekdays, and parking is always free.",
+    "checked_at": "2026-09-18T15:31:31.548Z",
     "source_url": "https://www.bartonorchards.com/plan-your-visit/",
     "varieties": [
       "paula-red",
@@ -452,6 +470,11 @@
       "fresh_cider",
       "farm_market"
     ],
+    "upick_open": true,
+    "hours": "PYO is weather permitting from 10am-4:45pm WEEKENDS ONLY. Our Farm Store is open daily 10:am to 5:30pm.",
+    "admission": "We charge $25 cash per 1 peck bag which holds 10-12lbs of fruit. PYO IS CASH ONLY. An ATM is available in the Farm Store for your convenience",
+    "checked_at": "2026-09-18T15:31:31.548Z",
+    "source_url": "https://beardsleyscidermill.com/",
     "import_source": "ctapples",
     "import_id": "beardsley-s-cider-mill-orchard-llc-shelton",
     "import_licence": "unstated",
@@ -495,7 +518,7 @@
       "farm_market"
     ],
     "hours": "Open everyday 9-6. Sundays 9-5",
-    "checked_at": "2026-09-17T16:32:57.886Z",
+    "checked_at": "2026-09-18T15:31:31.548Z",
     "source_url": "https://maysfarmny.com/",
     "import_source": "nyaa",
     "import_id": "3477",
@@ -680,6 +703,10 @@
       "fresh_cider",
       "farm_market"
     ],
+    "upick_open": true,
+    "hours": "PICK YOUR OWN APPLES ON SATURDAYS AND SUNDAYS ONLY AND Columbus Day 11 AM TO 4:30. Store hours are 11 am to 5pm everyday.",
+    "checked_at": "2026-09-18T15:31:31.548Z",
+    "source_url": "https://bluejayorchardsct.com/",
     "import_source": "ctapples",
     "import_id": "blue-jay-orchards-bethel",
     "import_licence": "unstated",
@@ -748,10 +775,10 @@
       "pick_your_own"
     ],
     "upick_open": true,
-    "hours": "Sept-Oct Daily 9-5 (Last Entry to Field 4:15pm)",
-    "admission": "Apples: Peck $25 (2 people) 1/2 Bushel $40 OR 2 for $63 (4 people)",
+    "hours": "You Pick Hours June-Aug Tues – Sat 9am-4pm (Last Entry to field @ 3:30pm) Sept-Oct Daily 9-5 (Last Entry to Field 4:15pm)",
+    "admission": "NO ticket, wristband, or entry fee is needed for U-Pick. PRE-PAID Picking container per person is the only requirement. Apples: Peck $25 (2 people), 1/2 Bushel $40 OR 2 for $63 (4 people)",
     "reservations_required": false,
-    "checked_at": "2026-09-17T16:32:57.886Z",
+    "checked_at": "2026-09-18T15:31:31.548Z",
     "source_url": "https://www.bowmanorchards.com/you-pick-days/",
     "varieties": [
       "jersey-mac",
@@ -801,9 +828,9 @@
       "fresh_cider",
       "pick_your_own"
     ],
-    "hours": "Monday: CLOSED Tuesday: CLOSED Wednesday: CLOSED Thursday: CLOSED Friday: 9am-5pm Saturday: 9am-5pm Sunday: 9am-5pm",
-    "checked_at": "2026-09-17T16:32:57.886Z",
-    "source_url": "https://breezehillfarmpreserve.com/",
+    "hours": "Monday: CLOSED. Tuesday: CLOSED. Wednesday: CLOSED. Thursday: CLOSED. Friday: 9am-5pm. Saturday: 9am-5pm. Sunday: 9am-5pm. * Holiday Schedules may change",
+    "checked_at": "2026-09-18T12:08:44.903Z",
+    "source_url": "https://breezehillfarmpreserve.com/apple-orchard/",
     "varieties": [
       "honeycrisp",
       "empire",
