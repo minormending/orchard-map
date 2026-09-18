@@ -200,7 +200,10 @@ const jsonLd = {
         <td>{orchard.hours ?? <span class="unknown">Not checked</span>}</td>
       </tr>
       <tr>
-        <th>Picking open</th>
+        {/* "This season", matching what the field actually means. Whether they
+            are open on any given day is the row above it, which is their own
+            wording rather than our interpretation of it. */}
+        <th>Picking this season</th>
         <td>
           {orchard.upick_open === true ? 'Yes, per the farm'
             : orchard.upick_open === false ? 'No, per the farm'

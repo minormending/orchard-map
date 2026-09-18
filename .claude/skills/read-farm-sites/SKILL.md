@@ -72,52 +72,52 @@ For each file, read `pages[].text` and decide:
 
 | field | record it when |
 | --- | --- |
-| `upick_open` | the page says plainly whether picking is on **today**. See the calendar rules below — this is the field that gets this wrong |
+| `upick_open` | the farm's site says picking is running **this season**. See the section below — this is the field that needs the most care |
 | `hours` | opening hours are stated. Copy them as written; do not tidy or normalise |
 | `admission` | an entry or u-pick price is stated. Copy as written |
 | `reservations_required` | the page says timed tickets or bookings are required |
 | `variety` | the farm says it **grows or is picking** that apple. One observation per variety, `value` being the slug from `src/data/varieties.json` |
 
-### Calendars are not statements about today
+### `upick_open` is about the SEASON, not about today
 
-This is the single thing this job gets wrong, and it has now gone wrong twice
-in opposite directions on the same farm.
+This field changed meaning once, after a run got it right and this skill got
+it wrong. Read this before judging it.
 
-**A list of dates is not a claim that picking is on.** Altamont Orchards
-publishes:
+`upick_open = true` means **the farm's own site says picking is running this
+season.** It does not mean the gate is open this morning. When they are
+actually open goes in `hours`, in their words, and the orchard page prints the
+two together.
 
-> Picking Calendar: Pick Your Own Apples 2026 **September 12 & 13th, September
-> 19 and 20th**: Cortland and Macs
+That split exists because most farms pick weekends only. Reading such a page
+on a Thursday, the old rule left two bad options: claim they are open today
+(wrong), or record nothing and have the page tell a visitor the site "did not
+say plainly whether picking is on" — when it had said so very plainly. Neither
+is honest. Two fields, two questions.
 
-Read on Friday 18 September, that page says picking happened last weekend and
-will happen tomorrow. It does **not** say picking is on today. A previous run
-scored it 0.7 — over the promotion threshold — and the map would have told
-somebody to drive there on a day the orchard was shut.
+So:
 
-So, for `upick_open = true`, one of these must hold:
+| the page says | upick_open | hours |
+|---|---|---|
+| "Currently picking" | true, 0.9 | whatever it gives |
+| "Open weekends 10–5 through October" | true, 0.8 | "Weekends 10–5 through October" |
+| a calendar listing dates, **any of them still ahead** | true, 0.7 | the dates, as written |
+| a calendar whose dates have **all passed** | nothing — see below | the dates, as written |
+| "See you next season", "closed for the year" | false, 0.9 | — |
+| "Apple season begins August 29th", nothing else, read in October | true, 0.5 | — |
+| nothing about picking at all | nothing | — |
 
-1. The page says it **in the present tense**: "Currently Picking", "open
-   today", "u-pick is open now". This is the only case that deserves 0.9.
-2. Today falls inside a **stated continuous range**: "open daily 9–5 through
-   October", "picking every day until the apples run out". 0.7–0.8.
-3. Today is **explicitly one of the listed dates**. Check the day of the week
-   as well as the date — your context has both.
+**Still check the dates against today.** Your context has today's date and its
+day of the week. A calendar is evidence the season is running only while some
+of it is in the future; once every listed date has passed, the page is a
+record of a finished season and you should record nothing rather than guess.
+Altamont Orchards on 18 September listed "September 12 & 13th, September 19
+and 20th" — the 19th was ahead, so the season was plainly running, and the
+weekend-only shape belonged in `hours`.
 
-And these are **not** enough on their own:
-
-- A calendar of dates, none of which is today. Record nothing.
-- A weekly pattern today does not match — "open weekends only" read on a
-  Tuesday. Record nothing, and put the pattern in `hours`, which is where a
-  restriction belongs.
-- A season that has merely *started*: "apple season begins August 29th" read in
-  October says the season opened, not that the farm is open today. At most 0.5,
-  which stays below the threshold on purpose.
-- Anything undated. A page with no date on it is a page that could have been
-  written last year.
-
-When in doubt the answer is to record nothing for `upick_open` and put what the
-page actually said into `hours`. An empty field costs a visitor a phone call; a
-wrong one costs them the drive.
+**A contradiction is still worth 0.5.** Barton Orchards led with "SUNDAY 9/13
+UPDATE — WE ARE OPEN TODAY!" while its u-pick page said "See You Next Season!".
+When a site disagrees with itself, stay below the promotion threshold and say
+so in your report.
 
 **A variety named as a parentage is not a crop.** "Empire is a cross between
 McIntosh and Red Delicious" tells you the farm grows Empire; it says nothing
@@ -133,16 +133,15 @@ mistakes do not cost the same.
 
 Be harsh. The promotion threshold is 0.55 and it is meant to mean something.
 
-- **0.9** — present tense, unambiguous, on a page that is clearly current
-- **0.7** — today falls inside a range the page states, or is one of its listed
-  dates
-- **0.5** — the season is evidently running but the page does not speak to
-  today. Deliberately below the promotion threshold
+- **0.9** — the page says it outright, in the present tense or with a date
+- **0.8** — a stated season or weekly pattern that has not ended
+- **0.7** — a calendar with dates still ahead of today
+- **0.5** — inferred rather than stated, or the site contradicts itself.
+  Deliberately below the promotion threshold
 - **below 0.4** — do not record it at all
 
-If you find yourself reasoning "the season has started, so they are probably
-open", that is a 0.5 at most. Probably-open is exactly the answer this map
-exists not to give.
+If you find yourself reasoning "the season probably started by now", that is a
+0.5 at most. Probably is exactly the answer this map exists not to give.
 
 ### Recording
 

@@ -49,18 +49,19 @@ export function checkedState(
  */
 export function pickingLine(orchard: Orchard, now: Date = new Date()): string {
   const state = checkedState(orchard, PICKING_FRESHNESS, now)
+  const hours = orchard.hours ? ' Check the hours below before going.' : ''
 
   if (orchard.upick_open === undefined || orchard.upick_open === null) {
     /*
      * Three different answers, and collapsing them misleads.
      *
      * "Nobody has checked" alongside "read from their website today" is a
-     * contradiction a reader will notice — and the second case is the more
-     * interesting one anyway: we DID read the site, and it did not say. Barton
-     * Orchards is the live example: their homepage led with "WE ARE OPEN
-     * TODAY!" dated four days earlier and their u-pick page said "See You Next
-     * Season!", so the honest answer is that the site is ambiguous, not that
-     * nobody looked.
+     * contradiction a reader will notice — and the second is the more
+     * interesting case: we DID read the site and it did not say. Barton
+     * Orchards is the live example: its homepage led with "WE ARE OPEN TODAY!"
+     * dated four days earlier while its u-pick page said "See You Next
+     * Season!", so the honest answer is that the site contradicts itself, not
+     * that nobody looked.
      */
     return state
       ? `We read their site ${state.ago}, and it did not say plainly whether picking is on.`
@@ -70,17 +71,31 @@ export function pickingLine(orchard: Orchard, now: Date = new Date()): string {
   if (!state) return 'Nobody has checked whether picking is open.'
 
   if (orchard.upick_open === false) {
-    return `The farm said picking was not on, ${state.ago}.`
+    return `Their site said picking was not running, ${state.ago}.`
   }
 
+  /*
+   * "This season", not "today", and the distinction is the whole reason this
+   * function was rewritten.
+   *
+   * It used to say "picking was on, today", which is a claim about this
+   * morning — and a great many farms pick weekends only. Reading a page on a
+   * Thursday that plainly says "open weekends" then left two bad options:
+   * assert it is open today (wrong) or record nothing and tell the visitor the
+   * site "did not say plainly" (also wrong — it said so very plainly).
+   *
+   * So upick_open now means what the farm's site says about the SEASON, and
+   * when they are actually open lives in `hours`, which the page prints
+   * directly below. Two fields, two questions, neither pretending to answer
+   * the other.
+   */
   switch (state.freshness) {
     case 'fresh':
-      return `The farm's own site said picking was on, ${state.ago}.`
+      return `Their own site says picking is on this season, read ${state.ago}.${hours}`
     case 'recent':
-      return `The farm's site said picking was on ${state.ago} — worth ringing to confirm.`
+      return `Their site said picking was on this season ${state.ago}.${hours || ' Worth ringing to confirm.'}`
     default:
-      // Deliberately does not say "open". At this age it is history.
-      return `The farm's site said picking was on back ${state.ago}. That is too old to rely on — ring ahead.`
+      return `Their site said picking was on this season back ${state.ago}. That is too old to rely on — ring ahead.`
   }
 }
 
