@@ -3,7 +3,7 @@
  * Connecticut, from the Connecticut Apple Marketing Board.
  *
  *   node scripts/import-ctapples.mjs              dry run
- *   node scripts/import-ctapples.mjs --apply      merge the clean ones
+ *   node scripts/import-ctapples.mjs --apply      add the clean ones to the database
  *   node scripts/import-ctapples.mjs --candidates write the unclear ones for review
  *
  * ctapples.org is Connecticut's direct analogue of applesfromny.com — the
@@ -28,16 +28,16 @@
  *   analysed for several minutes before the word "Ooops" turned up in the
  *   extracted text. The directory is at /find-a-farm/.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 // Placement — geocoding, the box, and the duplicate rules — is shared with the
 // Pennsylvania importer. Those rules took several rounds to get right and a
 // second copy would be a second place for them to drift.
 import { place, slugify, normaliseUrl, BOX } from './lib/directory.mjs'
+import { connect, loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const OUT = join(ROOT, 'src', 'data', 'orchards.json')
 const CANDIDATES = join(ROOT, 'scripts', '.candidates')
 const UA = 'orchard-map/0.1 (+https://github.com/minormending/orchard-map; polite)'
 const SOURCE = 'https://ctapples.org/find-a-farm/'
@@ -182,7 +182,14 @@ process.stderr.write(`parsed ${records.length} listings from ${SOURCE}\n`)
 
 // --- shape ------------------------------------------------------------------
 
-const existing = JSON.parse(readFileSync(OUT, 'utf8'))
+/*
+ * What we already have, read from the table rather than from the exported
+ * file. The file is a build artifact of the table and is filtered to active
+ * rows, so reading it meant this importer could not see a hidden farm and
+ * would have offered to add one back.
+ */
+const client = await connect(ROOT, 'import-ctapples')
+const existing = await loadRoster(client)
 
 const clean = []
 const unclear = []
@@ -252,13 +259,19 @@ if (WRITE_CANDIDATES) {
 }
 
 if (APPLY) {
-  const bySlug = new Set(existing.map((o) => o.slug))
-  const added = clean.map((c) => {
-    let slug = slugify(c.name, c.town)
-    if (bySlug.has(slug)) slug = `${slug}-ct`
-    bySlug.add(slug)
+  const taken = new Set(existing.map((o) => o.slug))
+  const rows = clean.map((c) => {
+    /*
+     * The import id is the directory's identity for this farm and the slug is
+     * our URL for it. They used to be the same string, which meant a farm that
+     * needed the collision suffix got an import id nothing would match on the
+     * next run — so it would be offered again, forever. Keeping them separate
+     * is what makes the run idempotent.
+     */
+    const base = slugify(c.name, c.town)
+    const slug = freeSlug(base, taken, 'ct')
+    taken.add(slug)
     return {
-      id: `ctapples-${slug}`,
       slug,
       name: c.name,
       lat: Number(c.lat.toFixed(6)),
@@ -271,16 +284,27 @@ if (APPLY) {
       website: c.website,
       tags: c.tags,
       import_source: 'ctapples',
-      import_id: slug,
+      import_id: base,
       // Stated nowhere, like the New York association's. Recorded as ambiguity
       // rather than dressed up as permission.
       import_licence: 'unstated',
-      imported_at: new Date().toISOString().slice(0, 10),
     }
   })
-  const merged = [...existing, ...added].sort((a, b) => a.slug.localeCompare(b.slug))
-  writeFileSync(OUT, JSON.stringify(merged, null, 2) + '\n')
-  process.stderr.write(`\nwrote ${merged.length} orchards to ${OUT}\n`)
+
+  const { inserted, skipped } = await addOrchards(client, rows)
+  process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
+  for (const slug of inserted) process.stderr.write(`    + ${slug}\n`)
+  if (skipped.length > 0) {
+    // Nothing should reach the insert that the matchers did not clear, so a
+    // conflict here means they missed one. Worth saying out loud.
+    process.stderr.write(`\n${skipped.length} already present, which the checks above should have caught:\n`)
+    for (const slug of skipped) process.stderr.write(`    ? ${slug}\n`)
+  }
+  if (inserted.length > 0) {
+    process.stderr.write('\nrun `pnpm db:export -- --apply` to publish them to the site\n')
+  }
 } else if (!WRITE_CANDIDATES) {
-  process.stderr.write('\ndry run — --apply to merge, --candidates to write the unclear ones\n')
+  process.stderr.write('\ndry run — --apply to add them, --candidates to write the unclear ones\n')
 }
+
+await client.end()
