@@ -85,7 +85,7 @@ a { color: var(--accent); }
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
-  padding: 0.7rem 1rem;
+  padding: 0.55rem 1rem;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
   flex: none;
@@ -114,23 +114,25 @@ a { color: var(--accent); }
 }
 
 .site-foot {
-  padding: 1.25rem 1rem 2rem;
+  padding: 1rem 1rem 1.5rem;
   border-top: 1px solid var(--line);
   color: var(--ink-2);
   font-size: 0.8rem;
   background: var(--surface);
 }
 
-.site-foot p { margin: 0.3rem 0; max-width: 60ch; }
+.site-foot p { margin: 0.3rem 0; max-width: 62ch; }
+.site-foot .foot-short a { margin-left: 0.5rem; }
 
 /* On the map page the footer competes with the map for height, so it shrinks
    to one line. The tile credits are already in MapLibre's own control. */
 .site-foot-compact {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 1rem;
   font-size: 0.75rem;
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  align-items: baseline;
 }
 .site-foot-compact p { margin: 0; }
 
@@ -414,14 +416,31 @@ a { color: var(--accent); }
   .site-head .tagline { flex-basis: 100%; }
 
   /*
-   * On a phone the map page's footer was taking a sixth of the screen to say
-   * two things, one of which MapLibre's own attribution control is already
-   * saying inside the map. The tile credits go; the licence note and the "ring
-   * ahead" caveat stay, because those are the honest part and nothing else
-   * says them.
+   * A phone had 190px of chrome around a 622px map — 23% of the screen spent
+   * on a title, a tagline and two paragraphs of provenance.
+   *
+   * The tagline goes: the h1 already says "Orchard Map" and the page is a map
+   * of orchards, so the second line was telling people what they could see.
+   * The nav comes up onto the title's row. The footer keeps only the sentence
+   * that changes what somebody does — ring ahead — and links the rest to the
+   * About page, where it is set out properly rather than compressed.
    */
-  .site-foot-compact .foot-tiles { display: none; }
-  .site-foot-compact { padding: 0.45rem 0.75rem; font-size: 0.7rem; }
+  .site-head {
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    gap: 0.5rem;
+  }
+  .site-head h1 { font-size: 0.95rem; }
+  .site-head .tagline { display: none; }
+  .site-head nav { gap: 0.75rem; font-size: 0.8rem; }
+
+  .site-foot .foot-long { display: none; }
+  .site-foot-compact { padding: 0.3rem 0.75rem; font-size: 0.7rem; }
+  .site-foot { padding: 0.5rem 0.75rem 0.7rem; }
+  /* One row at 375px. The link label shortens with it — "Where this comes
+     from" is the nicer phrase and it cost a whole extra line. */
+  .site-foot .foot-short { line-height: 1.35; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -48,14 +48,20 @@ const href = canonical ?? new URL(Astro.url.pathname, Astro.site).href
       {wide ? <slot /> : <main class="page"><slot /></main>}
 
       <footer class:list={["site-foot", wide && "site-foot-compact"]}>
-        <p>
-          Listings from the <a href="https://www.applesfromny.com/" rel="noreferrer nofollow">New York Apple
-          Association</a>, which states no licence for them. Opening hours and whether
-          picking is open are <strong>not</strong> checked yet — ring ahead.
+        {/*
+          The short line is the one that survives on a phone, so it carries the
+          part that matters: ring ahead. It also had to change — the old copy
+          said listings came from the New York association and that hours were
+          "not checked yet", and both stopped being true once Connecticut,
+          Pennsylvania and the scraper arrived.
+        */}
+        <p class="foot-short">
+          Not every farm's hours are checked — <strong>ring ahead</strong>.
+          <a href={`${base}about`}>About</a>
         </p>
-        <p class="foot-tiles">
-          Map data © <a href="https://www.openstreetmap.org/copyright" rel="noreferrer">OpenStreetMap</a>
-          contributors · tiles by <a href="https://carto.com/attributions" rel="noreferrer">CARTO</a> ·
+        <p class="foot-long">
+          Listings from state apple directories and <a href="https://www.openstreetmap.org/copyright" rel="noreferrer">OpenStreetMap</a>,
+          most stating no licence. Tiles by <a href="https://carto.com/attributions" rel="noreferrer">CARTO</a> ·
           <a href="https://github.com/minormending/orchard-map" rel="noreferrer">source</a>
         </p>
       </footer>
