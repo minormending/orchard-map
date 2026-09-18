@@ -94,6 +94,32 @@ test('provenance travels with every row', () => {
   }
 })
 
+test('every source in the data has a name to credit', () => {
+  /*
+   * The "Listed by" row on every orchard page used to be the hardcoded string
+   * "New York Apple Association", so 39 Connecticut farms, 14 Pennsylvania
+   * ones and 10 OpenStreetMap rows were all credited to an association with no
+   * connection to them — and OSM's ODbL requires attribution as a condition of
+   * use, so that one was a licence breach rather than a cosmetic error.
+   *
+   * Read out of sources.ts rather than imported, because node:test cannot load
+   * TypeScript. If that file stops being the thing the pages read from, this
+   * test is measuring nothing — which is what the assertion on the count of
+   * parsed keys is for.
+   */
+  const source = readFileSync(new URL('../src/lib/sources.ts', import.meta.url), 'utf8')
+  const keys = new Set([...source.matchAll(/^\s*key: '([a-z]+)',$/gm)].map((m) => m[1]))
+  assert.ok(keys.size >= 4, `parsed ${keys.size} source keys from sources.ts`)
+
+  for (const o of ORCHARDS) {
+    assert.ok(
+      keys.has(o.import_source),
+      `${o.name} is listed by "${o.import_source}", which sources.ts cannot name — ` +
+      `it would be credited by its raw key`,
+    )
+  }
+})
+
 test('OSM rows carry no guessed categories', () => {
   // OSM has nothing that maps onto the association's categories. Inferring
   // pick_your_own from a name containing "U-Pick" is exactly the sort of

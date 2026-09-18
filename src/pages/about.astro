@@ -1,6 +1,12 @@
 ---
 import Base from '../layouts/Base.astro'
 import { ORCHARDS } from '../lib/orchards'
+import { SOURCES } from '../lib/sources'
+
+const counts = new Map<string, number>()
+for (const o of ORCHARDS) {
+  counts.set(o.import_source, (counts.get(o.import_source) ?? 0) + 1)
+}
 
 const upick = ORCHARDS.filter((o) => o.tags.includes('pick_your_own')).length
 const cider = ORCHARDS.filter((o) => o.tags.includes('craft_cider')).length
@@ -117,21 +123,17 @@ const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
     Every listing records where it came from and under what terms, so withdrawing a
     source is one filter rather than an archaeology project.
   </p>
+  {/* The same list the orchard pages credit from, so this cannot drift out of
+      agreement with what a visitor reads on the farm itself. */}
   <ul>
-    <li>
-      <strong>New York Apple Association</strong> — no licence stated. That is
-      ambiguity rather than permission, and it is recorded as <code>unstated</code>
-      rather than left blank or guessed at.
-    </li>
-    <li>
-      <strong>Connecticut Apple Marketing Board</strong> and
-      <strong>PA Preferred</strong> — no licence stated, recorded the same way.
-    </li>
-    <li>
-      <strong>OpenStreetMap</strong> — <a href="https://opendatacommons.org/licenses/odbl/" rel="noreferrer">ODbL 1.0</a>,
-      which requires attribution and share-alike. The only rows here whose terms are
-      not a guess.
-    </li>
+    {SOURCES.map((s) => (
+      <li>
+        <strong>{s.name}</strong> — {s.licenceUrl
+          ? <a href={s.licenceUrl} rel="noreferrer">{s.licence}</a>
+          : s.licence}{s.note ? `. ${s.note}` : '.'}
+        {' '}<span class="muted">({counts.get(s.key) ?? 0} listings)</span>
+      </li>
+    ))}
   </ul>
 
   <h2>Source</h2>

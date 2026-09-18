@@ -5,6 +5,7 @@ import { distanceM, milesLabel, tagLabels } from '../../lib/filters'
 import { ripeNow, windowLabel } from '../../lib/season'
 import { VARIETY_BY_SLUG } from '../../lib/season'
 import { checkedState, pickingLine, hasFarmData, HOURS_FRESHNESS } from '../../lib/checked'
+import { creditFor } from '../../lib/sources'
 import type { Orchard } from '../../lib/types'
 
 /**
@@ -41,6 +42,7 @@ const builtLabel = built.toLocaleDateString('en-US', { day: 'numeric', month: 'l
 
 const farmData = hasFarmData(orchard)
 const checked = checkedState(orchard, HOURS_FRESHNESS, built)
+const credit = creditFor(orchard)
 const grows = (orchard.varieties ?? [])
   .map((v) => VARIETY_BY_SLUG.get(v))
   .filter((v) => v !== undefined)
@@ -106,7 +108,7 @@ const jsonLd = {
   {tags.length > 0 ? (
     <ul>{tags.map((t) => <li>{t}</li>)}</ul>
   ) : (
-    <p class="unknown">The association lists them without a category.</p>
+    <p class="unknown">{credit.name} lists them without a category.</p>
   )}
 
   <h2>What is usually ripe now</h2>
@@ -236,7 +238,11 @@ const jsonLd = {
       </tr>
       <tr>
         <th>Listed by</th>
-        <td>New York Apple Association (no licence stated), imported {orchard.imported_at}</td>
+        <td>
+          {credit.name} ({credit.licenceUrl
+            ? <a href={credit.licenceUrl} rel="noreferrer">{credit.licence}</a>
+            : credit.licence}), imported {orchard.imported_at}
+        </td>
       </tr>
     </tbody>
   </table>
