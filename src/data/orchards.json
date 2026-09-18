@@ -2606,6 +2606,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "db-21346769-2a17-4d91-b225-77e07aa71c79",
+    "slug": "lapsley-orchard-pomfret-center",
+    "name": "Lapsley Orchard",
+    "lat": 41.830104,
+    "lng": -71.957108,
+    "address": "403 Orchard Hill Road (Rte. 169)",
+    "town": "Pomfret Center",
+    "state": "CT",
+    "zip": "06259",
+    "phone": "860-928-9186",
+    "website": null,
+    "tags": [],
+    "import_source": "ctapples",
+    "import_id": "lapsley-orchard-pomfret-center",
+    "import_licence": "unstated",
+    "imported_at": "2026-09-18"
+  },
+  {
     "id": "nyaa-3665",
     "slug": "lawrence-farms-orchards-inc-newburgh",
     "name": "Lawrence Farms Orchards Inc",
