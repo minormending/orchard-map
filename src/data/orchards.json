@@ -458,6 +458,28 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "ctapples-belltown-hill-orchards-llc-south-glastonbury",
+    "slug": "belltown-hill-orchards-llc-south-glastonbury",
+    "name": "Belltown Hill Orchards, LLC",
+    "lat": 41.651571,
+    "lng": -72.57712,
+    "address": "483 Matson Hill Road",
+    "town": "South Glastonbury",
+    "state": "CT",
+    "zip": "06073",
+    "phone": "860-633-2789",
+    "website": "https://www.belltownhillorchards.com",
+    "tags": [
+      "pick_your_own",
+      "fresh_cider",
+      "farm_market"
+    ],
+    "import_source": "ctapples",
+    "import_id": "belltown-hill-orchards-llc-south-glastonbury",
+    "import_licence": "unstated",
+    "imported_at": "2026-09-18"
+  },
+  {
     "id": "nyaa-3477",
     "slug": "bernard-may-son-wading-river",
     "name": "Bernard May & Son",
@@ -3749,6 +3771,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "ctapples-rose-orchards-north-branford",
+    "slug": "rose-orchards-north-branford",
+    "name": "Rose Orchards",
+    "lat": 41.316132,
+    "lng": -72.78363,
+    "address": "33 Branford Road",
+    "town": "North Branford",
+    "state": "CT",
+    "zip": "06471",
+    "phone": "203-488-7996",
+    "website": null,
+    "tags": [],
+    "import_source": "ctapples",
+    "import_id": "rose-orchards-north-branford",
+    "import_licence": "unstated",
+    "imported_at": "2026-09-18"
+  },
+  {
     "id": "osm-way-958246607",
     "slug": "rose-s-berry-farm-glastonbury",
     "name": "Rose's Berry Farm",
@@ -5140,6 +5180,24 @@
     "import_id": "3871",
     "import_licence": "unstated",
     "imported_at": "2026-09-17"
+  },
+  {
+    "id": "ctapples-wright-s-orchard-dried-flower-farm-tolland",
+    "slug": "wright-s-orchard-dried-flower-farm-tolland",
+    "name": "Wright's Orchard & Dried Flower Farm",
+    "lat": 41.866231,
+    "lng": -72.311334,
+    "address": "271 South River Road",
+    "town": "Tolland",
+    "state": "CT",
+    "zip": "06084",
+    "phone": "860-872-1665",
+    "website": "https://www.wrightsorchard.com",
+    "tags": [],
+    "import_source": "ctapples",
+    "import_id": "wright-s-orchard-dried-flower-farm-tolland",
+    "import_licence": "unstated",
+    "imported_at": "2026-09-18"
   },
   {
     "id": "nyaa-3872",

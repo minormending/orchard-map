@@ -72,11 +72,52 @@ For each file, read `pages[].text` and decide:
 
 | field | record it when |
 | --- | --- |
-| `upick_open` | the page says plainly whether picking is on **right now**. A dated announcement counts only if the date has not passed — today's date is in your context. A page saying "we open in September" in October is not saying it is open |
+| `upick_open` | the page says plainly whether picking is on **today**. See the calendar rules below — this is the field that gets this wrong |
 | `hours` | opening hours are stated. Copy them as written; do not tidy or normalise |
 | `admission` | an entry or u-pick price is stated. Copy as written |
 | `reservations_required` | the page says timed tickets or bookings are required |
 | `variety` | the farm says it **grows or is picking** that apple. One observation per variety, `value` being the slug from `src/data/varieties.json` |
+
+### Calendars are not statements about today
+
+This is the single thing this job gets wrong, and it has now gone wrong twice
+in opposite directions on the same farm.
+
+**A list of dates is not a claim that picking is on.** Altamont Orchards
+publishes:
+
+> Picking Calendar: Pick Your Own Apples 2026 **September 12 & 13th, September
+> 19 and 20th**: Cortland and Macs
+
+Read on Friday 18 September, that page says picking happened last weekend and
+will happen tomorrow. It does **not** say picking is on today. A previous run
+scored it 0.7 — over the promotion threshold — and the map would have told
+somebody to drive there on a day the orchard was shut.
+
+So, for `upick_open = true`, one of these must hold:
+
+1. The page says it **in the present tense**: "Currently Picking", "open
+   today", "u-pick is open now". This is the only case that deserves 0.9.
+2. Today falls inside a **stated continuous range**: "open daily 9–5 through
+   October", "picking every day until the apples run out". 0.7–0.8.
+3. Today is **explicitly one of the listed dates**. Check the day of the week
+   as well as the date — your context has both.
+
+And these are **not** enough on their own:
+
+- A calendar of dates, none of which is today. Record nothing.
+- A weekly pattern today does not match — "open weekends only" read on a
+  Tuesday. Record nothing, and put the pattern in `hours`, which is where a
+  restriction belongs.
+- A season that has merely *started*: "apple season begins August 29th" read in
+  October says the season opened, not that the farm is open today. At most 0.5,
+  which stays below the threshold on purpose.
+- Anything undated. A page with no date on it is a page that could have been
+  written last year.
+
+When in doubt the answer is to record nothing for `upick_open` and put what the
+page actually said into `hours`. An empty field costs a visitor a phone call; a
+wrong one costs them the drive.
 
 **A variety named as a parentage is not a crop.** "Empire is a cross between
 McIntosh and Red Delicious" tells you the farm grows Empire; it says nothing
@@ -92,10 +133,16 @@ mistakes do not cost the same.
 
 Be harsh. The promotion threshold is 0.55 and it is meant to mean something.
 
-- **0.9** — the page states it unambiguously, in words, dated to now
-- **0.7** — clearly implied, no reasonable other reading
-- **0.5** — probably, but a careful person would ring ahead
+- **0.9** — present tense, unambiguous, on a page that is clearly current
+- **0.7** — today falls inside a range the page states, or is one of its listed
+  dates
+- **0.5** — the season is evidently running but the page does not speak to
+  today. Deliberately below the promotion threshold
 - **below 0.4** — do not record it at all
+
+If you find yourself reasoning "the season has started, so they are probably
+open", that is a 0.5 at most. Probably-open is exactly the answer this map
+exists not to give.
 
 ### Recording
 
