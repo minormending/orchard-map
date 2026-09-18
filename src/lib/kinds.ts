@@ -44,7 +44,21 @@ export const KINDS: KindSpec[] = [
      * to do.
      */
     kind: 'other',
-    colour: '#4A7C4E',
+    /*
+     * Slate blue rather than the green this used to be.
+     *
+     * Red against green is the classic confusion pair: roughly one man in
+     * twelve has some form of red-green colour blindness, and at seven pixels
+     * across, #C2384A and the old #4A7C4E were close in lightness as well as
+     * collapsing toward the same yellow-brown under deuteranopia. Blue
+     * survives every common simulation, which is why it is worth losing a
+     * little of the autumn palette for. The amber stays: it separates from the
+     * red by lightness even when both lose their hue.
+     *
+     * kinds.test.mjs simulates the three dichromacies and refuses a palette
+     * where any two categories come out closer than they do here.
+     */
+    colour: '#3A6E8F',
     label: 'Not known yet',
     meaning: 'a farm market, or simply a farm nobody has told us about',
   },

@@ -63,8 +63,11 @@ export function Legend({ orchards }: { orchards: Orchard[] }) {
           </li>
         ))}
       </ul>
+      {/* Names the label rather than the colour. The colour changed once
+          already — green to slate blue, for red-green colour blindness — and
+          this line went stale in the same commit that changed it. */}
       <p className="legend-note">
-        Green means nobody has told us, not that there is no picking.
+        "Not known yet" means nobody has told us, not that there is no picking.
       </p>
     </aside>
   )
