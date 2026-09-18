@@ -216,6 +216,7 @@ const existing = JSON.parse(readFileSync(OUT, 'utf8'))
 const clean = []
 const unclear = []
 let outsideBox = 0
+let alreadyKnown = 0
 
 for (const g of growers) {
   const base = { ...g, source: `${HOST}/search`, tags: [] }
@@ -226,13 +227,23 @@ for (const g of growers) {
   }
   if (!inBox(g.lat, g.lng)) { outsideBox++; continue }
 
+  /*
+   * A match against a row this importer already added is the importer being
+   * idempotent, not a finding. Connecticut got this fix when its second run
+   * reported all 43 of its own imports as possible duplicates; Pennsylvania
+   * did not, because it does its own placement rather than calling place() —
+   * the site publishes coordinates, so there is no geocoding to share. The
+   * first scheduled run duly reported 14 of its own farms back at us.
+   */
   const sameName = existing.find((o) => sameBusiness(o.name, g.name))
   if (sameName) {
+    if (sameName.import_source === 'papreferred') { alreadyKnown++; continue }
     unclear.push({ ...base, reason: `same name as one we have: ${sameName.name}`, duplicate_of: sameName.slug })
     continue
   }
   const near = existing.find((o) => distanceM(o, g) < 600)
   if (near) {
+    if (near.import_source === 'papreferred') { alreadyKnown++; continue }
     unclear.push({ ...base, reason: `within 600m of ${near.name}`, duplicate_of: near.slug })
     continue
   }
@@ -242,6 +253,7 @@ for (const g of growers) {
 process.stderr.write(`
   ready to add:  ${clean.length}
   need a look:   ${unclear.length}
+  already ours:  ${alreadyKnown}
   outside the day-trip box: ${outsideBox}
     (most of Pennsylvania is — Adams County, the state's apple capital, is
      about 200 miles from New York City)
