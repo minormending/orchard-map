@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEscape } from '@minormending/map-kit'
 import { OrchardMap, type MapApi } from './OrchardMap'
 import { OrchardDetail } from './OrchardDetail'
+import { Legend } from './Legend'
 import { SeasonBanner } from './SeasonBanner'
 import { AuthButton } from './AuthButton'
 import { AddOrchard } from './AddOrchard'
@@ -178,6 +179,8 @@ export function MapExplorer({ orchards, base }: Props) {
           placing={placing}
           onPlace={(at) => { setPlaced(at); setPlacing(false) }}
         />
+
+        <Legend orchards={visible} />
 
         {placing && (
           <p className="placing-hint">Click the farm's position on the map</p>

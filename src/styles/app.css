@@ -685,3 +685,88 @@ a { color: var(--accent); }
 
 .build-tag:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
 .build-tag:disabled { cursor: default; opacity: 0.7; }
+
+/* --- the key ------------------------------------------------------------- */
+
+/*
+ * Top-left, because every other corner of the map is spoken for: MapLibre's
+ * zoom and geolocate are top-right, the detail sheet is bottom-left, the
+ * attribution is bottom-right, and on a phone the list button is bottom-centre.
+ */
+.legend {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 4;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.5rem 0.65rem 0.55rem;
+  font-size: 0.78rem;
+  max-width: 13rem;
+}
+
+.legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.25rem; }
+.legend li { display: flex; align-items: center; gap: 0.45rem; }
+
+.legend-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: none;
+  /* The same white ring the map draws, so a swatch looks like a pin rather
+     than like a colour sample. */
+  box-shadow: 0 0 0 1.5px #fff, 0 0 0 2px rgb(0 0 0 / 12%);
+}
+
+.legend-label { color: var(--ink-2); }
+.legend-label em { font-style: normal; color: var(--ink); font-weight: 600; }
+
+.legend-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--ink-2);
+  border-top: 1px solid var(--line);
+  padding-top: 0.4rem;
+}
+
+.legend-hide {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.2rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  font-size: 1rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-radius: 50%;
+}
+.legend-hide:hover { background: var(--surface-2); color: var(--ink); }
+
+.legend-show {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 4;
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.legend-show:hover { color: var(--accent); border-color: var(--accent); }
+
+@media (max-width: 52rem) {
+  /* Tighter on a phone, where the map is the whole page. */
+  .legend { font-size: 0.72rem; padding: 0.4rem 0.55rem 0.45rem; max-width: 11.5rem; }
+  .legend-note { font-size: 0.64rem; }
+}

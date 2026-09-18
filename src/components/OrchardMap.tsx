@@ -4,6 +4,7 @@ import type { FeatureCollection } from 'geojson'
 import { CARTO_DARK, CARTO_LIGHT } from '@minormending/map-kit'
 import type { Orchard } from '../lib/types'
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from '../lib/orchards'
+import { circleColourExpression, kindOf } from '../lib/kinds'
 
 const SOURCE = 'orchards'
 
@@ -34,13 +35,9 @@ function toGeoJSON(orchards: Orchard[]): FeatureCollection {
         slug: o.slug,
         name: o.name,
         // The dot's colour says what the place is, so the map is readable
-        // before anything is clicked. Pick-your-own wins when a place is both,
-        // because it is the thing people came here to find.
-        kind: o.tags.includes('pick_your_own')
-          ? 'upick'
-          : o.tags.includes('craft_cider') || o.tags.includes('fresh_cider')
-            ? 'cider'
-            : 'other',
+        // before anything is clicked. What each colour means lives in
+        // lib/kinds.ts, which the legend reads too.
+        kind: kindOf(o),
       },
     })),
   }
@@ -101,12 +98,7 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPl
             10, 7,
             14, 10,
           ],
-          'circle-color': [
-            'match', ['get', 'kind'],
-            'upick', '#C2384A',
-            'cider', '#C8792A',
-            /* other */ '#4A7C4E',
-          ],
+          'circle-color': circleColourExpression() as never,
           'circle-stroke-width': 1.5,
           'circle-stroke-color': '#FFFFFF',
           'circle-opacity': 0.92,
