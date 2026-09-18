@@ -33,7 +33,7 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { connect, loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
+import { loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CACHE = join(ROOT, 'scripts', '.cache')
@@ -306,8 +306,7 @@ orchards.sort((a, b) => a.slug.localeCompare(b.slug))
  * already holds, not just against this batch, because the map now carries
  * Connecticut and Pennsylvania farms this importer knows nothing about.
  */
-const client = await connect(ROOT, 'import-nyaa')
-const existing = await loadRoster(client)
+const existing = await loadRoster(ROOT, 'import-nyaa')
 const taken = new Set(existing.map((o) => o.slug))
 const mine = new Set(existing.filter((o) => o.import_source === 'nyaa').map((o) => o.import_id))
 for (const o of orchards) {
@@ -339,7 +338,7 @@ if (!APPLY) {
   }
   process.stderr.write('\ndry run — pass --apply to add them to the database\n')
 } else {
-  const { inserted, skipped: already } = await addOrchards(client, fresh)
+  const { inserted, skipped: already } = await addOrchards(ROOT, 'import-nyaa', fresh)
   process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
   for (const slug of inserted.slice(0, 15)) process.stderr.write(`    + ${slug}\n`)
   if (inserted.length > 15) process.stderr.write(`    … and ${inserted.length - 15} more\n`)
@@ -350,5 +349,3 @@ if (!APPLY) {
     process.stderr.write('\nrun `pnpm db:export -- --apply` to publish them to the site\n')
   }
 }
-
-await client.end()

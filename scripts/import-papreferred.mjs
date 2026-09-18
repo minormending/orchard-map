@@ -36,7 +36,7 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { inBox, matchExisting, slugify, normaliseUrl } from './lib/directory.mjs'
-import { connect, loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
+import { loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CANDIDATES = join(ROOT, 'scripts', '.candidates')
@@ -213,8 +213,7 @@ process.stderr.write(
 )
 
 /* From the table, not from the exported file — see lib/roster.mjs. */
-const client = await connect(ROOT, 'import-papreferred')
-const existing = await loadRoster(client)
+const existing = await loadRoster(ROOT, 'import-papreferred')
 const clean = []
 const unclear = []
 let outsideBox = 0
@@ -304,7 +303,7 @@ if (APPLY) {
     }
   })
 
-  const { inserted, skipped } = await addOrchards(client, rows)
+  const { inserted, skipped } = await addOrchards(ROOT, 'import-papreferred', rows)
   process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
   for (const slug of inserted) process.stderr.write(`    + ${slug}\n`)
   if (skipped.length > 0) {
@@ -317,5 +316,3 @@ if (APPLY) {
 } else if (!WRITE_CANDIDATES) {
   process.stderr.write('\ndry run — --apply to add them, --candidates to write the unclear ones\n')
 }
-
-await client.end()

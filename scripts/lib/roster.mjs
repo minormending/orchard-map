@@ -20,10 +20,27 @@
 import pg from 'pg'
 import { dbConfig } from '@minormending/map-kit/node/connect'
 
-export async function connect(root, name) {
+/**
+ * Connect, do one thing, disconnect.
+ *
+ * Deliberately not a connection the caller holds. The first version handed one
+ * back, and every importer opened it, then spent ten or twenty minutes
+ * geocoding one listing a second before it wrote anything — and a pooled
+ * connection sitting idle that long gets closed from the other end. The run
+ * died on an ECONNRESET from a socket nobody was awaiting, after all the
+ * network work was already done and thrown away.
+ *
+ * The slow part of an import is the directory and the geocoder. The database
+ * is wanted twice, briefly, at either end of it.
+ */
+async function withClient(root, name, fn) {
   const client = new pg.Client(dbConfig({ root, applicationName: `orchard-map/${name}` }))
   await client.connect()
-  return client
+  try {
+    return await fn(client)
+  } finally {
+    await client.end()
+  }
 }
 
 /**
@@ -35,15 +52,17 @@ export async function connect(root, name) {
  * cannot see it would cheerfully add it back every week. Reading the file
  * instead of the table had exactly that blind spot.
  */
-export async function loadRoster(client) {
-  const { rows } = await client.query(`
-    select slug, name,
-           st_y(geog::geometry) as lat,
-           st_x(geog::geometry) as lng,
-           import_source, import_id, status
-      from orchards
-  `)
-  return rows.map((r) => ({ ...r, lat: Number(r.lat), lng: Number(r.lng) }))
+export async function loadRoster(root, name) {
+  return withClient(root, name, async (client) => {
+    const { rows } = await client.query(`
+      select slug, name,
+             st_y(geog::geometry) as lat,
+             st_x(geog::geometry) as lng,
+             import_source, import_id, status
+        from orchards
+    `)
+    return rows.map((r) => ({ ...r, lat: Number(r.lat), lng: Number(r.lng) }))
+  })
 }
 
 /**
@@ -56,37 +75,39 @@ export async function loadRoster(client) {
  * A conflict reaching this point is a bug worth reporting, so the count of
  * rows that did not insert is returned rather than swallowed.
  */
-export async function addOrchards(client, rows) {
+export async function addOrchards(root, name, rows) {
   if (rows.length === 0) return { inserted: [], skipped: [] }
 
-  const inserted = []
-  await client.query('begin')
-  try {
-    for (const o of rows) {
-      const { rows: out } = await client.query(
-        `insert into orchards
-           (slug, name, geog, address, town, state, zip, phone, website, tags,
-            import_source, import_id, import_licence)
-         values ($1, $2, st_point($3, $4)::geography, $5, $6, $7, $8, $9, $10,
-                 $11::text[]::orchard_tag[], $12, $13, $14)
-         on conflict (import_source, import_id) do nothing
-         returning slug`,
-        [
-          o.slug, o.name, o.lng, o.lat, o.address, o.town, o.state, o.zip,
-          o.phone, o.website, o.tags ?? [],
-          o.import_source, o.import_id, o.import_licence,
-        ],
-      )
-      if (out.length > 0) inserted.push(out[0].slug)
+  return withClient(root, name, async (client) => {
+    const inserted = []
+    await client.query('begin')
+    try {
+      for (const o of rows) {
+        const { rows: out } = await client.query(
+          `insert into orchards
+             (slug, name, geog, address, town, state, zip, phone, website, tags,
+              import_source, import_id, import_licence)
+           values ($1, $2, st_point($3, $4)::geography, $5, $6, $7, $8, $9, $10,
+                   $11::text[]::orchard_tag[], $12, $13, $14)
+           on conflict (import_source, import_id) do nothing
+           returning slug`,
+          [
+            o.slug, o.name, o.lng, o.lat, o.address, o.town, o.state, o.zip,
+            o.phone, o.website, o.tags ?? [],
+            o.import_source, o.import_id, o.import_licence,
+          ],
+        )
+        if (out.length > 0) inserted.push(out[0].slug)
+      }
+      await client.query('commit')
+    } catch (err) {
+      await client.query('rollback')
+      throw err
     }
-    await client.query('commit')
-  } catch (err) {
-    await client.query('rollback')
-    throw err
-  }
 
-  const got = new Set(inserted)
-  return { inserted, skipped: rows.filter((o) => !got.has(o.slug)).map((o) => o.slug) }
+    const got = new Set(inserted)
+    return { inserted, skipped: rows.filter((o) => !got.has(o.slug)).map((o) => o.slug) }
+  })
 }
 
 /**

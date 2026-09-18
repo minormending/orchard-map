@@ -31,7 +31,7 @@
  */
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { connect, loadRoster, addOrchards } from './lib/roster.mjs'
+import { loadRoster, addOrchards } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const UA = 'orchard-map/0.1 (+https://github.com/minormending/orchard-map; polite)'
@@ -183,8 +183,7 @@ async function overpass(query) {
 const { elements = [] } = await overpass(QUERY)
 
 /* From the table, not from the exported file — see lib/roster.mjs. */
-const client = await connect(ROOT, 'import-osm')
-const existing = await loadRoster(client)
+const existing = await loadRoster(ROOT, 'import-osm')
 const bySlug = new Set(existing.map((o) => o.slug))
 
 const skipped = { notAppleish: 0, noPosition: 0, duplicate: 0, outside: 0 }
@@ -307,7 +306,7 @@ if (!APPLY) {
   }
   process.stderr.write('\ndry run — pass --apply to add them to the database\n')
 } else {
-  const { inserted, skipped: already } = await addOrchards(client, added)
+  const { inserted, skipped: already } = await addOrchards(ROOT, 'import-osm', added)
   process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
   for (const slug of inserted.slice(0, 15)) process.stderr.write(`    + ${slug}\n`)
   if (inserted.length > 15) process.stderr.write(`    … and ${inserted.length - 15} more\n`)
@@ -318,5 +317,3 @@ if (!APPLY) {
     process.stderr.write('\nrun `pnpm db:export -- --apply` to publish them to the site\n')
   }
 }
-
-await client.end()

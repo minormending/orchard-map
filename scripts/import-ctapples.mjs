@@ -35,7 +35,7 @@ import { fileURLToPath } from 'node:url'
 // Pennsylvania importer. Those rules took several rounds to get right and a
 // second copy would be a second place for them to drift.
 import { place, slugify, normaliseUrl, BOX } from './lib/directory.mjs'
-import { connect, loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
+import { loadRoster, addOrchards, freeSlug } from './lib/roster.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CANDIDATES = join(ROOT, 'scripts', '.candidates')
@@ -188,8 +188,7 @@ process.stderr.write(`parsed ${records.length} listings from ${SOURCE}\n`)
  * rows, so reading it meant this importer could not see a hidden farm and
  * would have offered to add one back.
  */
-const client = await connect(ROOT, 'import-ctapples')
-const existing = await loadRoster(client)
+const existing = await loadRoster(ROOT, 'import-ctapples')
 
 const clean = []
 const unclear = []
@@ -291,7 +290,7 @@ if (APPLY) {
     }
   })
 
-  const { inserted, skipped } = await addOrchards(client, rows)
+  const { inserted, skipped } = await addOrchards(ROOT, 'import-ctapples', rows)
   process.stderr.write(`\nadded ${inserted.length} orchards to the database\n`)
   for (const slug of inserted) process.stderr.write(`    + ${slug}\n`)
   if (skipped.length > 0) {
@@ -306,5 +305,3 @@ if (APPLY) {
 } else if (!WRITE_CANDIDATES) {
   process.stderr.write('\ndry run — --apply to add them, --candidates to write the unclear ones\n')
 }
-
-await client.end()
