@@ -1,6 +1,6 @@
 {
   "source": "https://ctapples.org/find-a-farm/",
-  "fetched_at": "2026-09-18T21:53:14.186Z",
+  "fetched_at": "2026-09-19T10:57:21.030Z",
   "clean": [
     {
       "name": "Rogers Orchards-Sunnymount Farm",
@@ -15,41 +15,11 @@
       "source": "https://ctapples.org/find-a-farm/",
       "ok": true,
       "lat": 41.5546624,
-      "lng": -72.8476815
-    },
-    {
-      "name": "Lapsley Orchard",
-      "town": "Pomfret Center",
-      "state": "CT",
-      "zip": "06259",
-      "address": "403 Orchard Hill Road (Rte. 169)",
-      "phone": "860-928-9186",
-      "website": null,
-      "tags": [],
-      "county": "Windham",
-      "source": "https://ctapples.org/find-a-farm/",
-      "ok": true,
-      "lat": 41.8301043,
-      "lng": -71.9571078
+      "lng": -72.8476815,
+      "precision": "approximate"
     }
   ],
   "unclear": [
-    {
-      "name": "Applebrook Farm & Cider Mill",
-      "town": "Broad Brook",
-      "state": "CT",
-      "zip": "06106",
-      "address": "216 East Rd.",
-      "phone": "860-654-1590",
-      "website": "https://www.applebrookfarm.com",
-      "tags": [
-        "fresh_cider",
-        "farm_market"
-      ],
-      "county": "Hartford",
-      "source": "https://ctapples.org/find-a-farm/",
-      "reason": "could not be geocoded"
-    },
     {
       "name": "Rose's Berry Farm",
       "town": "South Glastonbury",

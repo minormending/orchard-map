@@ -3776,6 +3776,25 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "db-84074136-bdc1-40e2-871e-dd47454e31e7",
+    "slug": "rogers-orchards-sunnymount-farm-southington",
+    "name": "Rogers Orchards-Sunnymount Farm",
+    "lat": 41.554662,
+    "lng": -72.847681,
+    "address": "Rt. 322 Meriden-Waterbury Road",
+    "town": "Southington",
+    "state": "CT",
+    "zip": "06489",
+    "phone": "203-879-1206",
+    "website": "https://www.rogersorchards.com",
+    "tags": [],
+    "position_precision": "approximate",
+    "import_source": "ctapples",
+    "import_id": "rogers-orchards-sunnymount-farm-southington",
+    "import_licence": "unstated",
+    "imported_at": "2026-09-19"
+  },
+  {
     "id": "papreferred-rohrbach-s-farm-market-catawissa",
     "slug": "rohrbach-s-farm-market-catawissa",
     "name": "Rohrbach's Farm Market",
