@@ -1,24 +1,7 @@
 {
   "source": "https://ctapples.org/find-a-farm/",
-  "fetched_at": "2026-09-19T10:57:21.030Z",
-  "clean": [
-    {
-      "name": "Rogers Orchards-Sunnymount Farm",
-      "town": "Southington",
-      "state": "CT",
-      "zip": "06489",
-      "address": "Rt. 322 Meriden-Waterbury Road",
-      "phone": "203-879-1206",
-      "website": "https://www.rogersorchards.com",
-      "tags": [],
-      "county": "Hartford",
-      "source": "https://ctapples.org/find-a-farm/",
-      "ok": true,
-      "lat": 41.5546624,
-      "lng": -72.8476815,
-      "precision": "approximate"
-    }
-  ],
+  "fetched_at": "2026-09-19T12:18:53.866Z",
+  "clean": [],
   "unclear": [
     {
       "name": "Rose's Berry Farm",
