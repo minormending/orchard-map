@@ -124,6 +124,42 @@ const anOrchard = async () => {
   return rows[0]
 }
 
+/**
+ * Make this test the only thing promotion can see.
+ *
+ * Every test runs inside a transaction that is rolled back, so WRITES are
+ * already isolated. Reads are not, and promote_observations() reads the whole
+ * table: it promotes everything above the threshold and returns a count of
+ * all of it. So a test that inserts one observation and asserts "0 promoted"
+ * is really asserting that nothing anywhere in the database is promotable,
+ * which stopped being true the first night the reader ran. Two tests here have
+ * been failing since 2026-09-17 for that reason and for no other — they were
+ * measuring the production dataset.
+ *
+ * Emptying the table first is safe precisely because of the rollback, and it
+ * makes the counts mean what the assertions say they mean: this observation,
+ * this promotion, this skip.
+ */
+async function onlyThisTestsObservations() {
+  /*
+   * These tests run against the real database, so this statement is a loaded
+   * gun and the only thing keeping it pointed at the floor is a rollback in
+   * the harness below. That is too much to leave as a convention: the harness
+   * marks its transaction with a `set local`, which by definition cannot
+   * outlive it, and this refuses to fire without it. Run the file some other
+   * way, lose the rollback, call this from a script, and you get an error
+   * instead of an empty observations table.
+   */
+  const { rows } = await client.query(
+    `select current_setting('orchard_map.in_test', true) as marked`)
+  if (rows[0].marked !== 'yes') {
+    throw new Error(
+      'refusing to delete observations: not inside the test harness transaction',
+    )
+  }
+  await client.query('delete from scrape_observations')
+}
+
 // ---------------------------------------------------------------------------
 // Grants: the rule is that a table with a submit_* function has no write grant.
 // ---------------------------------------------------------------------------
@@ -397,6 +433,7 @@ test('five a day and no more', async () => {
 
 test('promotion respects the confidence threshold', async () => {
   const o = await anOrchard()
+  await onlyThisTestsObservations()
   const { rows: run } = await client.query(
     `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
     [o.id])
@@ -430,6 +467,7 @@ test('promotion respects the confidence threshold', async () => {
 
 test('a bad value costs one field, not the whole run', async () => {
   const o = await anOrchard()
+  await onlyThisTestsObservations()
   const { rows: run } = await client.query(
     `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
     [o.id])
@@ -449,6 +487,9 @@ let failed = 0
 
 for (const t of tests) {
   await client.query('begin')
+  // Scoped to this transaction, so it vanishes on rollback. Destructive
+  // helpers check for it before they will run.
+  await client.query(`set local orchard_map.in_test = 'yes'`)
   try {
     await t.fn()
     console.log(`  ✔ ${t.name}`)
