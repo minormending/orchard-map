@@ -136,6 +136,20 @@ const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
     ))}
   </ul>
 
+  <h2>Driving times</h2>
+  <p>
+    When you say where you are travelling from, the drive times come from
+    <a href="https://routing.openstreetmap.de/about.html" rel="noreferrer">OSRM</a>,
+    the demo server sponsored by FOSSGIS, running on OpenStreetMap data. One
+    request per origin, for every orchard at once.
+  </p>
+  <p>
+    <strong>There is no traffic in those numbers.</strong> They are free-flow
+    road times, and a Saturday morning in late September is exactly when that
+    is most wrong. Treat them as a way to sort the list, not as an arrival
+    time — which is why every one of them says "without traffic" next to it.
+  </p>
+
   <h2>Source</h2>
   <p>
     <a href="https://github.com/minormending/orchard-map" rel="noreferrer">github.com/minormending/orchard-map</a>.

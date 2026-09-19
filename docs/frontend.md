@@ -91,6 +91,69 @@ The amber survives because it separates from the red by lightness even when
 both lose their hue.
 </details>
 
+## Driving time
+
+A visitor can say where they are travelling from, and the list re-sorts by road
+time with a filter at 45 / 60 / 90 / 120 minutes.
+
+```mermaid
+flowchart TD
+    SET["Visitor sets an origin<br/>geolocation, or a click on the map"] --> REQ["One OSRM table request<br/>1 source, 253 destinations"]
+    REQ -->|"about 600ms, 54KB"| TIMES["A duration per orchard"]
+    TIMES --> CACHE["Cached in sessionStorage<br/>keyed to ~100m"]
+    TIMES --> SORT["List sorts by road time"]
+    TIMES --> BAND["Band filter becomes available"]
+    REQ -->|"fails"| FALL["Say so, drop the band filter,<br/>fall back to straight-line distance"]
+```
+
+Three things about this are deliberate.
+
+**The number has no traffic in it.** OSRM returns free-flow road time, and the
+Saturday morning in late September when everybody drives to the Hudson Valley
+is exactly when that is most wrong. Every label says **"without traffic"**, and
+a test asserts the phrase is still attached to the number — a confident
+"1h 47m" that is really two and a half hours is the sort of claim this map
+refuses everywhere else. Times are rounded to five minutes above an hour for
+the same reason.
+
+**The origin is not the visitor's location.** `here` is the device's position
+and is passed to the report box, where it checks that somebody saying "I was
+here today" was. `origin` is a pin dropped anywhere. Letting them be one value
+would turn a travel-planning control into a way to claim you are standing in an
+orchard you have never visited.
+
+**Failure is visible.** The demo server offers no uptime guarantee, so when the
+request fails the band chips are removed rather than left dead, the panel says
+drive times are unavailable, and the list falls back to straight-line distance.
+A farm with no duration fails the band filter rather than passing it: showing
+it would put a farm in a "within 60 minutes" list without anybody having
+established that it is.
+
+<details>
+<summary><b>Advanced:</b> why this service, and is it worth it over the distance sort?</summary>
+
+**Why OSRM.** The routing service gets the same test as a data source: it has
+to be one that can be named on the About page. This is the FOSSGIS-sponsored
+demo server on OSM data, whose terms are non-commercial, reasonable use and no
+more than one request a second. Google Directions fails that test for exactly
+the reason the importers refuse Maps. One matrix call per origin — not per
+farm, not per frame — is lighter than the map tiles a visitor is already
+pulling.
+
+**Is it worth it?** Genuinely, but modestly. Measured from Manhattan against
+the real dataset, ranking by road rather than by crow moves farms up to 40
+places:
+
+| farm | crow | road | |
+| --- | --- | --- | --- |
+| Twin Star Farms | 117km | 106min | 40 places nearer |
+| Wahoo Farm Market | 150km | 180min | 36 places further |
+
+And within a single 10km band the drive ranges 82 to 104 minutes. So
+straight-line distance was already getting most of the way there, which is why
+it remains the fallback rather than being ripped out.
+</details>
+
 ## Telling people what is not known
 
 The site's hardest design problem is not showing data. It is showing the
