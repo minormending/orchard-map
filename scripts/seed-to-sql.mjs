@@ -69,16 +69,25 @@ out.push(`-- Orchards. Note the update list: it carries the roster fields only.`
 out.push(`-- Operator and visitor facts are earned, and a re-seed must not wipe them.`)
 for (const o of orchards) {
   out.push(
-    `insert into orchards (slug, name, geog, address, town, state, zip, phone, website, tags, import_source, import_id, import_licence) values (` +
+    `insert into orchards (slug, name, geog, position_precision, address, town, state, zip, phone, website, tags, import_source, import_id, import_licence) values (` +
       [
         q(o.slug), q(o.name),
         `st_point(${o.lng}, ${o.lat})::geography`,
+        /*
+         * Travels with the position, because it is a fact ABOUT the position
+         * rather than an earned one. Left out until now, which meant a
+         * database bootstrapped from this file showed a road-level pin as an
+         * ordinary exact one and dropped the page's warning that it is the
+         * road and not the gate — the single thing the column exists to say.
+         */
+        o.position_precision ? `${q(o.position_precision)}::position_precision` : 'null',
         q(o.address), q(o.town), q(o.state), q(o.zip), q(o.phone), q(o.website),
         arr(o.tags ?? [], 'orchard_tag'),
         q(o.import_source), q(o.import_id), q(o.import_licence),
       ].join(', ') +
       `) on conflict (import_source, import_id) do update set ` +
-      `name = excluded.name, geog = excluded.geog, address = excluded.address, ` +
+      `name = excluded.name, geog = excluded.geog, ` +
+      `position_precision = excluded.position_precision, address = excluded.address, ` +
       `town = excluded.town, state = excluded.state, zip = excluded.zip, ` +
       `phone = excluded.phone, website = excluded.website, tags = excluded.tags;`,
   )
