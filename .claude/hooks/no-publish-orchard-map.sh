@@ -76,6 +76,11 @@ case "$flat" in
   # hook, which is the sort of thing a guard should survive being asked.
   *record-observations.mjs*--promote*) deny "promoting observations" ;;
   *"gh workflow run"*|*"gh run rerun"*) deny "triggering a deploy" ;;
+  # main is branch-protected, so the way onto it is a merge rather than a
+  # push. Blocking one and not the other would have moved the door rather
+  # than shut it. Opening a pull request stays allowed: proposing a change is
+  # the job, landing it is not.
+  *"gh pr merge"*)                   deny "merging a pull request" ;;
 esac
 
 # A write buried in db.mjs query, which is otherwise a read tool.

@@ -3,9 +3,30 @@
 `no-publish-orchard-map.sh` refuses, for any agent session, the commands that
 publish this project: `git push`, `export-data.mjs --apply`,
 `import-*.mjs --apply`, `db.mjs migrate` / `file`, writes smuggled through
-`db.mjs query`, `record-observations.mjs --promote`, and `gh workflow run`.
+`db.mjs query`, `record-observations.mjs --promote`, `gh workflow run`, and
+`gh pr merge`.
 
 An agent does the work and hands the command to a person, who runs it.
+Opening a pull request stays allowed — proposing a change is the job, landing
+it is not.
+
+## Two layers, and what each one is for
+
+`main` is branch-protected on GitHub: a pull request and a passing CI run are
+required, enforced on administrators too. That is the server-side layer, and
+its job is to survive this directory. If the hook is lifted, lost with the
+machine, or never loaded because a session started somewhere unexpected, a
+direct push to `main` still fails.
+
+It is **not** a wall against an agent, and it is worth being exact about why:
+this repository has one collaborator, and an agent pushes with that person's
+credentials. GitHub cannot tell the two apart. Requiring an approving review
+would not help either — nobody can approve their own pull request, so a
+solo-maintained repository would simply deadlock.
+
+So the hook is the control and the protection is the backstop. Together they
+mean an agent cannot push, cannot merge, and cannot deploy; it can commit
+locally and open a pull request, and a person lands it.
 
 ## The copy here is not the one that runs
 

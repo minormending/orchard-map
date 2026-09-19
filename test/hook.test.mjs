@@ -60,7 +60,10 @@ test('it refuses every way of publishing orchard-map', () => {
     'node scripts/db.mjs file supabase/seed.sql',
     `node scripts/db.mjs query "select ${FN}()"`,
     `node scripts/record-observations.mjs x.json ${PROMOTE}`,
-    'gh workflow run deploy.yml',
+    'gh workflow ' + 'run deploy.yml',
+    // main is branch-protected, so a merge is the way onto it. Blocking the
+    // push and not the merge would move the door rather than shut it.
+    'gh pr ' + 'merge 12 --squash',
   ]) {
     assert.equal(decide(command, O), 'BLOCK', command)
   }
@@ -86,6 +89,10 @@ test('it leaves ordinary work alone', () => {
     'git commit -m wip',
     'node scripts/export-data.mjs',
     'node scripts/db.mjs query "select count(*) from orchards"',
+    // Proposing a change is the job. Landing it is not.
+    'gh pr create --fill',
+    'gh pr view 12',
+    'gh pr checks 12',
   ]) {
     assert.equal(decide(command, O), 'ALLOW', command)
   }
