@@ -86,14 +86,15 @@ export async function addOrchards(root, name, rows) {
         const { rows: out } = await client.query(
           `insert into orchards
              (slug, name, geog, address, town, state, zip, phone, website, tags,
-              import_source, import_id, import_licence)
+              position_precision, import_source, import_id, import_licence)
            values ($1, $2, st_point($3, $4)::geography, $5, $6, $7, $8, $9, $10,
-                   $11::text[]::orchard_tag[], $12, $13, $14)
+                   $11::text[]::orchard_tag[], $12::position_precision, $13, $14, $15)
            on conflict (import_source, import_id) do nothing
            returning slug`,
           [
             o.slug, o.name, o.lng, o.lat, o.address, o.town, o.state, o.zip,
             o.phone, o.website, o.tags ?? [],
+            o.position_precision ?? null,
             o.import_source, o.import_id, o.import_licence,
           ],
         )

@@ -125,21 +125,6 @@ export async function geocode(query, { userAgent, delayMs = 1100 } = {}) {
 }
 
 /**
- * Have we got this listing already, and if not, does it need a person?
- *
- * Returns `null` when the listing is new and clean, `{ quiet: true }` when it
- * is one this importer has already added, and `{ reason, duplicate_of }` when
- * something wants a human eye. It never decides to drop something — a reason
- * is an invitation to look, not a verdict.
- *
- * Both importers call this. Pennsylvania used to carry its own copy of these
- * rules, because it gets coordinates from the directory and so cannot use
- * `place()`, which geocodes. The file header warned that a second copy would
- * be a second place for the rules to drift, and it was: both copies grew the
- * same two faults, and on 2026-09-18 three real Connecticut farms were deleted
- * as duplicates because of them.
- */
-/**
  * Is this a row this importer already added?
  *
  * Identity, and exactly. A row this importer already added is not a finding,
@@ -162,6 +147,21 @@ export function alreadyImported(existing, source, importId) {
   )
 }
 
+/**
+ * Have we got this listing already, and if not, does it need a person?
+ *
+ * Returns `null` when the listing is new and clean, `{ quiet: true }` when it
+ * is one this importer has already added, and `{ reason, duplicate_of }` when
+ * something wants a human eye. It never decides to drop something — a reason
+ * is an invitation to look, not a verdict.
+ *
+ * Both importers call this. Pennsylvania used to carry its own copy of these
+ * rules, because it gets coordinates from the directory and so cannot use
+ * `place()`, which geocodes. The file header warned that a second copy would
+ * be a second place for the rules to drift, and it was: both copies grew the
+ * same two faults, and on 2026-09-18 three real Connecticut farms were deleted
+ * as duplicates because of them.
+ */
 export function matchExisting(listing, at, existing, opts = {}) {
   const { source, importId } = opts
 
@@ -206,6 +206,16 @@ export function matchExisting(listing, at, existing, opts = {}) {
  * cannot match this and cannot lose its number.
  */
 const ROUTE = String.raw`(?:rtes?|rt|route|state\s+(?:route|hwy|highway)|us|hwy|highway)\.?\s*\d+[a-z]?`
+
+/**
+ * Does this street name a building, or only a road?
+ *
+ * A leading house number is the difference between "403 Orchard Hill Road",
+ * which geocodes to a farm, and "Meriden-Waterbury Road", which geocodes to
+ * a road that runs for miles. Rural directories carry plenty of the latter,
+ * because some farms genuinely are addressed from the route.
+ */
+export const hasHouseNumber = (street) => /^\s*\d/.test(String(street ?? ''))
 
 /**
  * The street line as a geocoder can use it.
@@ -309,18 +319,32 @@ export async function place(listing, existing, opts) {
    * exactly as it did, and the second query is only ever spent on a listing
    * that was otherwise about to be reported as unplaceable.
    */
+  /*
+   * Each query carries what a hit from it would mean.
+   *
+   * A street with a house number in it geocodes to a building, and that is
+   * the ordinary case — nothing is recorded, because "we did not write down a
+   * precision" is the honest state of every other row on the map and this is
+   * no different. A street WITHOUT a house number cannot do better than the
+   * road, and falling back to the farm's name cannot do better than whatever
+   * the geocoder thinks the name is. Those two are flagged, and the page tells
+   * visitors the pin is approximate.
+   */
   const queries = []
   if (listing.address) {
     const raw = String(listing.address).trim()
     const street = streetForGeocoder(raw)
-    queries.push(here(raw))
-    if (street && street !== raw) queries.push(here(street))
+    const precision = hasHouseNumber(street) ? null : 'approximate'
+    queries.push({ q: here(raw), precision })
+    if (street && street !== raw) queries.push({ q: here(street), precision })
   }
-  queries.push(`${listing.name}, ${listing.town}, ${listing.state}`)
+  queries.push({ q: `${listing.name}, ${listing.town}, ${listing.state}`, precision: 'approximate' })
 
   let at = null
-  for (const q of queries) {
+  let precision = null
+  for (const { q, precision: p } of queries) {
     at = await geocode(q, { userAgent })
+    precision = p
     if (at && await isTownCentre(at, listing, { userAgent })) {
       /*
        * Photon answers with the locality when it cannot find the street, and
@@ -350,5 +374,5 @@ export async function place(listing, existing, opts) {
   const hit = matchExisting(listing, at, existing, { source, importId })
   if (hit) return { ok: false, ...at, ...hit }
 
-  return { ok: true, ...at }
+  return { ok: true, ...at, precision }
 }

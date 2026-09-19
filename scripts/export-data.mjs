@@ -50,6 +50,7 @@ const { rows } = await client.query(`
     o.operator_checked_at, o.operator_source_url,
     o.dogs, o.restrooms, o.wheelchair_rows, o.cards_accepted, o.picnic_area,
     o.hayride, o.corn_maze, o.petting_zoo, o.food_on_site, o.cider_donuts,
+    o.position_precision,
     o.import_source, o.import_id, o.import_licence,
     coalesce(
       (select array_agg(ov.variety order by v.start_doy nulls last, v.name)
@@ -94,6 +95,9 @@ const exported = rows.map((r) => {
     website: r.website,
     tags: r.tags ?? [],
     ...compact({
+      // Only ever 'approximate' in practice — null means nobody recorded a
+      // precision, which is not the same as claiming the pin is exact.
+      position_precision: r.position_precision,
       upick_open: r.upick_open,
       hours: r.hours,
       admission: r.admission,

@@ -37,6 +37,17 @@ export interface Orchard {
 
   tags: Tag[]
 
+  /**
+   * How much the pin is claiming, when anyone has said.
+   *
+   * Absent on almost every row, and absence is not a claim of exactness — it
+   * means nobody recorded a precision. 'approximate' is the one that changes
+   * what a visitor sees: the page stops presenting the position as the farm's
+   * front gate and says to ring ahead, because the address the pin came from
+   * had no building in it.
+   */
+  position_precision?: 'exact' | 'approximate'
+
   /** Provenance. Withdrawing a source is one filter, and the licence travels
    *  with the rows rather than living in somebody's memory. */
   import_source: string

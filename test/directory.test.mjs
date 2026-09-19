@@ -13,7 +13,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   sameBusiness, matchExisting, alreadyImported, distanceM, NAME_MATCH_M, TOWN_CENTRE_M,
-  streetForGeocoder,
+  streetForGeocoder, hasHouseNumber,
 } from '../scripts/lib/directory.mjs'
 
 /** Rows as the exported data carries them: name, slug, lat, lng, import_*. */
@@ -201,4 +201,35 @@ test('identity is settled without needing a position', () => {
   assert.equal(alreadyImported([mine], 'ctapples', 'defazzio-orchard-east-killingly'), false)
   // A different source with the same id is a different farm.
   assert.equal(alreadyImported([mine], 'nyaa', 'lapsley-orchard-pomfret-center'), false)
+})
+
+// --- how much the pin claims -------------------------------------------------
+
+/**
+ * A house number is the difference between a building and a road.
+ *
+ * Rogers Orchards-Sunnymount Farm is addressed "Rt. 322 Meriden-Waterbury
+ * Road" — the farm really is addressed from the route, so the best a geocoder
+ * can do is the road, which runs for miles. Lapsley's "403 Orchard Hill Road
+ * (Rte. 169)" names a building once the driver's aside comes off.
+ */
+test('a street with a house number claims a building', () => {
+  assert.equal(hasHouseNumber(streetForGeocoder('403 Orchard Hill Road (Rte. 169)')), true)
+  assert.equal(hasHouseNumber(streetForGeocoder('1393 North Road, off Rte. 101')), true)
+  assert.equal(hasHouseNumber('295 Matson Hill Road'), true)
+})
+
+test('a street without one claims only a road', () => {
+  assert.equal(hasHouseNumber(streetForGeocoder('Rt. 322 Meriden-Waterbury Road')), false)
+  assert.equal(hasHouseNumber('Meriden-Waterbury Road'), false)
+  assert.equal(hasHouseNumber(null), false)
+})
+
+test('the route number alone does not count as a house number', () => {
+  // "Rt. 322 ..." starts with a letter, and the stripped form starts with the
+  // road name — neither should read as a building. Getting this wrong would
+  // publish a road-level pin as though it were exact, which is the whole thing
+  // this flag exists to prevent.
+  assert.equal(hasHouseNumber('Rt. 322 Meriden-Waterbury Road'), false)
+  assert.equal(hasHouseNumber(streetForGeocoder('Route 169')), false)
 })

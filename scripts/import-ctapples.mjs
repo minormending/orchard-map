@@ -282,6 +282,9 @@ if (APPLY) {
       phone: c.phone,
       website: c.website,
       tags: c.tags,
+      // Set only when the pin is the road rather than the building; null
+      // otherwise, which is where every other row on the map sits.
+      position_precision: c.precision ?? null,
       import_source: 'ctapples',
       import_id: base,
       // Stated nowhere, like the New York association's. Recorded as ambiguity
