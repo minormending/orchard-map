@@ -812,3 +812,40 @@ a { color: var(--accent); }
   .legend { font-size: 0.72rem; padding: 0.4rem 0.55rem 0.45rem; max-width: 11.5rem; }
   .legend-note { font-size: 0.64rem; }
 }
+
+/* --- travelling from ------------------------------------------------------ */
+
+.origin { margin: 0 0 0.5rem; }
+.origin p { margin: 0.2rem 0; font-size: 0.85rem; color: var(--ink-2); }
+.origin-set { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.origin-set strong { color: var(--ink); }
+.origin-warn { color: var(--cider); font-style: normal; }
+
+/*
+ * The origin is a ring, not a disc, and a different shape from every orchard
+ * dot. It marks where the visitor is, which is not a place they can pick
+ * apples, and the two must not be confusable at a glance.
+ */
+.origin-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #FFFFFF;
+  background: #1F2933;
+  box-shadow: 0 0 0 2px rgba(31, 41, 51, 0.55), 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+.origin-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: transparent;
+  flex: none;
+}
+
+.sheet-drive {
+  margin: 0.1rem 0 0.6rem;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}

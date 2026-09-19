@@ -9,11 +9,13 @@ interface Props {
   orchard: Orchard
   base: string
   distance: string | null
+  /** Already phrased, and already says there is no traffic in it. */
+  drive?: string | null
   position: { lat: number; lng: number } | null
   onClose: () => void
 }
 
-export function OrchardDetail({ orchard, base, distance, position, onClose }: Props) {
+export function OrchardDetail({ orchard, base, distance, drive, position, onClose }: Props) {
   const tags = tagLabels(orchard)
   const where = addressLine(orchard)
 
@@ -30,6 +32,14 @@ export function OrchardDetail({ orchard, base, distance, position, onClose }: Pr
           {distance && <em> · {distance} away</em>}
         </p>
       )}
+
+      {/*
+        Next to the address and above Directions, because it is the number
+        somebody decides on. The phrase "without traffic" travels with it from
+        lib/travel.ts rather than being added here, so there is one place that
+        can drop it.
+      */}
+      {drive && <p className="sheet-drive">{drive}</p>}
 
       {tags.length > 0 && (
         <ul className="sheet-tags">

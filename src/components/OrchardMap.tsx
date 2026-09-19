@@ -23,6 +23,8 @@ interface Props {
   /** While true, a click on the map places a pin instead of selecting one. */
   placing?: boolean
   onPlace?: (at: { lat: number; lng: number }) => void
+  /** Where the visitor is travelling from, if they have said. */
+  origin?: { lat: number; lng: number } | null
 }
 
 function toGeoJSON(orchards: Orchard[]): FeatureCollection {
@@ -45,7 +47,7 @@ function toGeoJSON(orchards: Orchard[]): FeatureCollection {
   }
 }
 
-export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPlace }: Props) {
+export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPlace, origin }: Props) {
   const holder = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const ready = useRef(false)
@@ -59,6 +61,7 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPl
   orchardsRef.current = orchards
   const selectedRef = useRef(selected)
   selectedRef.current = selected
+  const originMarker = useRef<maplibregl.Marker | null>(null)
   const placingRef = useRef(placing)
   placingRef.current = placing
   const onPlaceRef = useRef(onPlace)
@@ -181,6 +184,8 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPl
 
     return () => {
       ro.disconnect()
+      originMarker.current?.remove()
+      originMarker.current = null
       m.remove()
       map.current = null
       ready.current = false
@@ -198,6 +203,32 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPl
     const src = m.getSource(SOURCE) as GeoJSONSource | undefined
     src?.setData(toGeoJSON(orchards))
   }, [orchards])
+
+  /*
+   * The origin gets a Marker rather than a layer of its own.
+   *
+   * There is exactly one of it, it is not data, and it must never be clickable
+   * as though it were a farm — a DOM marker sits above every layer and outside
+   * the hit-testing the dot layers do, which is precisely the behaviour wanted.
+   * It is deliberately not the same shape as an orchard dot: this is where the
+   * visitor is, not somewhere they can pick apples.
+   */
+  useEffect(() => {
+    const m = map.current
+    if (!m) return
+    if (!origin) {
+      originMarker.current?.remove()
+      originMarker.current = null
+      return
+    }
+    if (!originMarker.current) {
+      const el = document.createElement('div')
+      el.className = 'origin-marker'
+      el.setAttribute('aria-hidden', 'true')
+      originMarker.current = new maplibregl.Marker({ element: el, anchor: 'center' })
+    }
+    originMarker.current.setLngLat([origin.lng, origin.lat]).addTo(m)
+  }, [origin])
 
   useEffect(() => {
     const m = map.current

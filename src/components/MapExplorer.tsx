@@ -8,6 +8,7 @@ import { AuthButton } from './AuthButton'
 import { AddOrchard } from './AddOrchard'
 import { HAS_DB } from '../lib/db'
 import { FILTERS, EMPTY_FILTERS, applyFilters, distanceM, milesLabel, tagLabels, type FilterState } from '../lib/filters'
+import { TRAVEL_BANDS, travelTimes, withinBand, durationLabel, drivingLabel, type Origin, type TravelTimes } from '../lib/travel'
 import type { Orchard, Tag } from '../lib/types'
 
 interface Props {
@@ -27,11 +28,59 @@ export function MapExplorer({ orchards, base }: Props) {
   const [placed, setPlaced] = useState<Position>(null)
   const mapApi = useRef<MapApi | null>(null)
 
+  /*
+   * `origin` is where the visitor says they are travelling FROM, and it is
+   * deliberately not `here`.
+   *
+   * `here` is the device's own position and is passed to the report box, where
+   * it verifies that somebody saying "I was here today" was. An origin is a
+   * pin the visitor drops anywhere they like, so letting the two be the same
+   * value would turn a travel-planning control into a way to claim you are
+   * standing in an orchard you have never been to.
+   */
+  const [origin, setOrigin] = useState<Origin | null>(null)
+  const [pickingOrigin, setPickingOrigin] = useState(false)
+  const [times, setTimes] = useState<TravelTimes | null>(null)
+  const [travel, setTravel] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle')
+  const [band, setBand] = useState<number | null>(null)
+
+  /*
+   * One request per origin. OSRM answers for every orchard at once, so this is
+   * not per-farm work, and the answer is cached for the session.
+   */
+  useEffect(() => {
+    if (!origin) { setTimes(null); setTravel('idle'); return }
+    const ac = new AbortController()
+    setTravel('loading')
+    travelTimes(origin, orchards, { signal: ac.signal })
+      .then((t) => { setTimes(t); setTravel('ready') })
+      .catch(() => {
+        if (ac.signal.aborted) return
+        // Degrade visibly. The list falls back to straight-line distance and
+        // the band filter turns itself off rather than silently keeping farms
+        // out of a list nobody can see the reason for.
+        setTimes(null)
+        setTravel('failed')
+        setBand(null)
+      })
+    return () => ac.abort()
+  }, [origin, orchards])
+
   const visible = useMemo(() => {
     const matched = applyFilters(orchards, filters)
-    if (!here) return matched
-    return [...matched].sort((a, b) => distanceM(here, a) - distanceM(here, b))
-  }, [orchards, filters, here])
+      .filter((o) => withinBand(o, times, band))
+
+    // By road when we know it, as the crow flies otherwise. `here` is only a
+    // fallback ordering when the visitor has not named an origin.
+    const from = origin ?? here
+    if (times) {
+      return [...matched].sort(
+        (a, b) => (times.get(a.slug) ?? Infinity) - (times.get(b.slug) ?? Infinity),
+      )
+    }
+    if (!from) return matched
+    return [...matched].sort((a, b) => distanceM(from, a) - distanceM(from, b))
+  }, [orchards, filters, here, origin, times, band])
 
   const chosen = useMemo(
     () => orchards.find((o) => o.slug === selected) ?? null,
@@ -82,7 +131,19 @@ export function MapExplorer({ orchards, base }: Props) {
     }
   }, [orchards])
 
-  const active = filters.tags.length > 0 || filters.query.trim() !== ''
+  const active = filters.tags.length > 0 || filters.query.trim() !== '' || band !== null
+
+  const useMyLocation = () => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => {
+        setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'your location' })
+        setPickingOrigin(false)
+      },
+      () => setPickingOrigin(false),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 },
+    )
+  }
 
   return (
     <div className="explorer">
@@ -98,6 +159,78 @@ export function MapExplorer({ orchards, base }: Props) {
               onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
             />
           </label>
+
+          {/*
+            * Travelling from. Two ways in, because the obvious one needs a
+            * permission prompt that plenty of people decline and the map is
+            * still useful to them.
+            */}
+          <div className="origin">
+            {!origin ? (
+              <p className="origin-ask">
+                Travelling from{' '}
+                <button type="button" className="link" onClick={useMyLocation}>
+                  your location
+                </button>
+                {' or '}
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => {
+                    setPickingOrigin(true)
+                    setPlacing(false)
+                    // On a phone the panel covers the map, so "click the map"
+                    // is an instruction the reader cannot follow until the
+                    // list gets out of the way. Same move the list makes when
+                    // you choose a farm.
+                    setListOpen(false)
+                  }}
+                >
+                  a point on the map
+                </button>
+                ?
+              </p>
+            ) : (
+              <p className="origin-set">
+                <span className="origin-dot" aria-hidden="true" />
+                From <strong>{origin.label}</strong>
+                {travel === 'loading' && <em> · working out drive times…</em>}
+                {travel === 'failed' && (
+                  <em className="origin-warn"> · drive times unavailable, showing straight-line distance</em>
+                )}
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => { setOrigin(null); setBand(null) }}
+                >
+                  clear
+                </button>
+              </p>
+            )}
+            {pickingOrigin && (
+              <p className="origin-ask">Click the map to say where you are starting from.</p>
+            )}
+          </div>
+
+          {travel === 'ready' && (
+            <div className="chips" role="group" aria-label="Driving time">
+              {TRAVEL_BANDS.map((b) => {
+                const on = band === b
+                return (
+                  <button
+                    key={b}
+                    type="button"
+                    className={`chip ${on ? 'chip-on' : ''}`}
+                    aria-pressed={on}
+                    title={`Orchards about ${b} minutes' drive or less, without traffic`}
+                    onClick={() => setBand(on ? null : b)}
+                  >
+                    ≤ {b < 60 ? `${b} min` : `${b / 60}h`}
+                  </button>
+                )
+              })}
+            </div>
+          )}
 
           <div className="chips" role="group" aria-label="Filters">
             {FILTERS.map((f) => {
@@ -124,7 +257,9 @@ export function MapExplorer({ orchards, base }: Props) {
                 clear
               </button>
             )}
-            {!here && (
+            {/* Redundant once an origin is set: the list is already ordered
+                by drive time, or by distance from that origin. */}
+            {!here && !origin && (
               <button type="button" className="link" onClick={locate}>
                 sort by distance
               </button>
@@ -143,7 +278,9 @@ export function MapExplorer({ orchards, base }: Props) {
                 <span className="card-name">{o.name}</span>
                 <span className="card-where">
                   {[o.town, o.state].filter(Boolean).join(', ')}
-                  {here && <em> · {milesLabel(distanceM(here, o))}</em>}
+                  {times?.get(o.slug) !== undefined
+                    ? <em> · {durationLabel(times.get(o.slug)!)} drive</em>
+                    : (origin ?? here) && <em> · {milesLabel(distanceM((origin ?? here)!, o))}</em>}
                 </span>
                 <span className="card-tags">{tagLabels(o).join(' · ') || 'No details yet'}</span>
               </button>
@@ -176,14 +313,30 @@ export function MapExplorer({ orchards, base }: Props) {
           selected={selected}
           onSelect={setSelected}
           apiRef={mapApi}
-          placing={placing}
-          onPlace={(at) => { setPlaced(at); setPlacing(false) }}
+          origin={origin}
+          placing={placing || pickingOrigin}
+          onPlace={(at) => {
+            if (pickingOrigin) {
+              setOrigin({
+                ...at,
+                label: `${at.lat.toFixed(3)}, ${at.lng.toFixed(3)}`,
+              })
+              setPickingOrigin(false)
+              return
+            }
+            setPlaced(at)
+            setPlacing(false)
+          }}
         />
 
         <Legend orchards={visible} />
 
         {placing && (
           <p className="placing-hint">Click the farm's position on the map</p>
+        )}
+
+        {pickingOrigin && (
+          <p className="placing-hint">Click where you are travelling from</p>
         )}
 
         {adding && (
@@ -198,7 +351,12 @@ export function MapExplorer({ orchards, base }: Props) {
             orchard={chosen}
             base={base}
             onClose={() => setSelected(null)}
-            distance={here ? milesLabel(distanceM(here, chosen)) : null}
+            distance={
+              (origin ?? here) ? milesLabel(distanceM((origin ?? here)!, chosen)) : null
+            }
+            drive={times?.get(chosen.slug) !== undefined
+              ? drivingLabel(times.get(chosen.slug)!)
+              : null}
             position={here}
           />
         )}
