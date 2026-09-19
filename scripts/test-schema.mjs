@@ -431,6 +431,66 @@ test('five a day and no more', async () => {
 // The scraper's output.
 // ---------------------------------------------------------------------------
 
+test('a field can be credited to a source other than the row\'s own', async () => {
+  /*
+   * Provenance was per row until a row turned out to have two sources: an
+   * OpenStreetMap listing whose address, town and phone come from the
+   * Connecticut board. The About page promises that withdrawing a source is
+   * one filter, and that stopped being true for it.
+   */
+  const o = await anOrchard()
+  await client.query(
+    `insert into orchard_field_sources (orchard_id, field, import_source, import_licence)
+     values ($1, 'address', 'ctapples', 'unstated')`, [o.id])
+
+  const { rows } = await client.query(
+    `select scope, field from source_withdrawal
+      where source = 'ctapples' and slug = $1 and scope = 'field only'`, [o.slug])
+  eq(rows.length, 1, 'withdrawing that source should name the field it would clear')
+  eq(rows[0].field, 'address')
+})
+
+test('a field name nothing knows about is refused', async () => {
+  // A typo would silently record provenance for a column that does not exist,
+  // which is worse than none: it reads as an answer.
+  const o = await anOrchard()
+  await raises(
+    () => client.query(
+      `insert into orchard_field_sources (orchard_id, field, import_source, import_licence)
+       values ($1, 'hours', 'ctapples', 'unstated')`, [o.id]),
+    { code: '23514' },
+  )
+})
+
+test('one field cannot be credited to two sources at once', async () => {
+  const o = await anOrchard()
+  await client.query(
+    `insert into orchard_field_sources (orchard_id, field, import_source, import_licence)
+     values ($1, 'phone', 'ctapples', 'unstated')`, [o.id])
+  await raises(
+    () => client.query(
+      `insert into orchard_field_sources (orchard_id, field, import_source, import_licence)
+       values ($1, 'phone', 'nyaa', 'unstated')`, [o.id]),
+    { code: '23505' },
+  )
+})
+
+test('losing an orchard takes its field provenance with it', async () => {
+  // Otherwise a deleted farm leaves provenance rows pointing at nothing, and
+  // the withdrawal view starts naming slugs that do not exist.
+  const { rows: made } = await client.query(
+    `insert into orchards (slug, name, geog, import_source, import_id, import_licence)
+     values ('fs-test', 'FS Test', st_point(-74, 41)::geography, 'nyaa', 'fs-test', 'unstated')
+     returning id`)
+  await client.query(
+    `insert into orchard_field_sources (orchard_id, field, import_source, import_licence)
+     values ($1, 'address', 'ctapples', 'unstated')`, [made[0].id])
+  await client.query('delete from orchards where id = $1', [made[0].id])
+  const { rows } = await client.query(
+    'select count(*)::int as n from orchard_field_sources where orchard_id = $1', [made[0].id])
+  eq(rows[0].n, 0)
+})
+
 test('promotion respects the confidence threshold', async () => {
   const o = await anOrchard()
   await onlyThisTestsObservations()
