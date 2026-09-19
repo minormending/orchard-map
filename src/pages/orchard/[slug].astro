@@ -43,6 +43,7 @@ const builtLabel = built.toLocaleDateString('en-US', { day: 'numeric', month: 'l
 const farmData = hasFarmData(orchard)
 const checked = checkedState(orchard, HOURS_FRESHNESS, built)
 const credit = creditFor(orchard)
+const approximate = orchard.position_precision === 'approximate'
 const grows = (orchard.varieties ?? [])
   .map((v) => VARIETY_BY_SLUG.get(v))
   .filter((v) => v !== undefined)
@@ -103,6 +104,22 @@ const jsonLd = {
     )}
     <a class="button button-quiet" href={`${base}?at=${orchard.slug}`}>Show on the map</a>
   </p>
+
+  {/*
+    * Directions navigates to the coordinate, not to the name, so when the
+    * coordinate is the road rather than the gate this has to be said next to
+    * the button rather than buried in the details table. The farm is addressed
+    * from the route because that is genuinely where it is; the geocoder can
+    * find the road and not the driveway.
+    */}
+  {approximate && (
+    <p class="caveat">
+      <strong>This pin is approximate.</strong> {orchard.name} is addressed from
+      the road rather than a house number, so the map shows the right road in the
+      right town — possibly some way from the entrance.
+      {orchard.phone ? ' Ring ahead for directions.' : ' Look for their sign.'}
+    </p>
+  )}
 
   <h2>What they do</h2>
   {tags.length > 0 ? (

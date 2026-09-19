@@ -23,6 +23,16 @@ export function Legend({ orchards }: { orchards: Orchard[] }) {
     return n
   }, [orchards])
 
+  /*
+   * Only explained when one is on screen. A hollow dot is rare — it means the
+   * farm is addressed from a road rather than a house number — and a legend
+   * that lists a symbol nobody can see is a legend people stop reading.
+   */
+  const anyApproximate = useMemo(
+    () => orchards.some((o) => o.position_precision === 'approximate'),
+    [orchards],
+  )
+
   if (!open) {
     return (
       <button
@@ -66,6 +76,12 @@ export function Legend({ orchards }: { orchards: Orchard[] }) {
       {/* Names the label rather than the colour. The colour changed once
           already — green to slate blue, for red-green colour blindness — and
           this line went stale in the same commit that changed it. */}
+      {anyApproximate && (
+        <p className="legend-note">
+          <span className="legend-dot legend-dot-hollow" aria-hidden="true" />
+          A hollow dot is the right road, not the front gate.
+        </p>
+      )}
       <p className="legend-note">
         "Not known yet" means nobody has told us, not that there is no picking.
       </p>

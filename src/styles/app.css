@@ -359,6 +359,29 @@ a { color: var(--accent); }
 }
 .callout p { margin: 0.3rem 0; }
 
+/*
+ * Said next to the Directions button, because that is the control that acts on
+ * the coordinate. Quieter than .callout — this qualifies a fact rather than
+ * being one, and a farm whose pin is approximate is not a farm with a problem.
+ */
+.caveat {
+  background: var(--surface-2);
+  border-left: 3px solid var(--ink-2);
+  padding: 0.7rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  margin: -0.4rem 0 1.2rem;
+}
+.caveat strong { color: var(--ink); }
+
+/* The hollow dot in the legend, matching the map's approximate pins. */
+.legend-dot-hollow {
+  background: transparent !important;
+  border: 2.5px solid var(--ink-2);
+  box-sizing: border-box;
+}
+
 .crumbs { font-size: 0.85rem; margin: 0 0 1rem; }
 
 .nearby { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }

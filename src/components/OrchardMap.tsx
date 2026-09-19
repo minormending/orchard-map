@@ -38,6 +38,8 @@ function toGeoJSON(orchards: Orchard[]): FeatureCollection {
         // before anything is clicked. What each colour means lives in
         // lib/kinds.ts, which the legend reads too.
         kind: kindOf(o),
+        // Whether the dot is claiming a building or a road.
+        approximate: o.position_precision === 'approximate',
       },
     })),
   }
@@ -99,9 +101,22 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPl
             14, 10,
           ],
           'circle-color': circleColourExpression() as never,
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#FFFFFF',
-          'circle-opacity': 0.92,
+          /*
+           * An approximate pin is drawn hollow: the fill drops away and the
+           * ring stays, so it reads as "around here" rather than "here". It
+           * keeps its category colour, because what the farm is has not become
+           * less certain — only where it is.
+           *
+           * Opacity rather than a dashed stroke because MapLibre circles have
+           * no dash, and rather than a smaller radius because small means
+           * "less important", which is the wrong idea entirely.
+           */
+          'circle-opacity': ['case', ['get', 'approximate'], 0.15, 0.92],
+          'circle-stroke-width': ['case', ['get', 'approximate'], 2.5, 1.5],
+          'circle-stroke-color': ['case',
+            ['get', 'approximate'], circleColourExpression(),
+            '#FFFFFF',
+          ] as never,
         },
       })
 

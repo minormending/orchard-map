@@ -61,6 +61,20 @@ export function OrchardDetail({ orchard, base, distance, position, onClose }: Pr
       </div>
 
       {/*
+        The sheet has its own Directions button, so it needs its own version of
+        this — a visitor who taps it from the map never sees the farm's page.
+        Shorter than the page's wording because the sheet is a summary and the
+        address is printed two lines above it.
+      */}
+      {orchard.position_precision === 'approximate' && (
+        <p className="sheet-caveat">
+          <strong>This pin is approximate.</strong> Addressed from the road
+          rather than a house number, so Directions will land on the right road,
+          not the gate.
+        </p>
+      )}
+
+      {/*
         The most important sentence on the page.
 
         Everything above came from a trade-association listing, which is a
