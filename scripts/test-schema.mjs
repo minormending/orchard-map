@@ -543,6 +543,87 @@ test('a newer observation still wins after an older one was promoted', async () 
   eq(now[0].hours, 'Today')
 })
 
+test('a value that will not cast falls through to the next-best reading', async () => {
+  /*
+   * The trap this closes. Promotion used to pick one winner per field and, if
+   * that value would not cast, give up on the field entirely — so a single
+   * malformed reading held a field hostage for the whole seven-day window
+   * while a perfectly good observation sat one row below it, never looked at.
+   */
+  const o = await anOrchard()
+  await onlyThisTestsObservations()
+  const { rows: run } = await client.query(
+    `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
+    [o.id])
+
+  // The good reading is OLDER, so the malformed one is tried first.
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url, created_at)
+     values ($1,$2,'upick_open','true','model',0.9,'https://x.test/good', now() - interval '2 hours')`,
+    [run[0].id, o.id])
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url)
+     values ($1,$2,'upick_open','not-a-boolean','model',0.9,'https://x.test/bad')`,
+    [run[0].id, o.id])
+
+  const { rows } = await client.query(`select promote_observations(0.55) as r`)
+  eq(rows[0].r.skipped, 1, 'the malformed one is still reported')
+  eq(rows[0].r.promoted, 1, 'and the next-best reading still gets its turn')
+
+  const { rows: now } = await client.query(
+    'select upick_open, operator_source_url from orchards where id = $1', [o.id])
+  eq(now[0].upick_open, true)
+  eq(now[0].operator_source_url, 'https://x.test/good',
+    'the farm must cite the reading that actually applied')
+})
+
+test('a bad reading is not stamped, so it is reported again', async () => {
+  const o = await anOrchard()
+  await onlyThisTestsObservations()
+  const { rows: run } = await client.query(
+    `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
+    [o.id])
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url)
+     values ($1,$2,'upick_open','not-a-boolean','model',0.9,'https://x.test/')`,
+    [run[0].id, o.id])
+
+  await client.query(`select promote_observations(0.55)`)
+  const { rows } = await client.query(
+    `select promoted_at from scrape_observations where value = 'not-a-boolean'`)
+  eq(rows[0].promoted_at, null, 'a failed promotion must leave no mark')
+
+  // A standing complaint about the reader, not a one-off to be swallowed.
+  const { rows: again } = await client.query(`select promote_observations(0.55) as r`)
+  eq(again[0].r.skipped, 1)
+})
+
+test('a below-threshold reading still stops the field', async () => {
+  /*
+   * Deliberately NOT fall-through. A low-confidence newest reading means the
+   * site said something we do not trust; reaching past it to an older one
+   * would publish stale information because the fresh information was poor.
+   * The field keeps whatever it already had.
+   */
+  const o = await anOrchard()
+  await onlyThisTestsObservations()
+  const { rows: run } = await client.query(
+    `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
+    [o.id])
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url, created_at)
+     values ($1,$2,'hours','Older but trusted','model',0.9,'https://x.test/old', now() - interval '2 hours')`,
+    [run[0].id, o.id])
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url)
+     values ($1,$2,'hours','Newest but shaky','heuristic',0.3,'https://x.test/new')`,
+    [run[0].id, o.id])
+
+  const { rows } = await client.query(`select promote_observations(0.55) as r`)
+  eq(rows[0].r.promoted, 0, 'a shaky newest reading must not be reached past')
+  eq(rows[0].r.skipped, 1)
+})
+
 test('a bad value costs one field, not the whole run', async () => {
   const o = await anOrchard()
   await onlyThisTestsObservations()
