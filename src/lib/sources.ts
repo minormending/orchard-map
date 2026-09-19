@@ -63,6 +63,45 @@ export const SOURCES: Source[] = [
 
 export const SOURCE_BY_KEY = new Map(SOURCES.map((s) => [s.key, s]))
 
+/** What to call a field in a credit line. */
+const FIELD_NAMES: Record<string, string> = {
+  name: 'its name',
+  geog: 'its position',
+  address: 'the address',
+  town: 'the town',
+  state: 'the state',
+  zip: 'the postcode',
+  phone: 'the phone number',
+  website: 'the website',
+  tags: 'what it does',
+}
+
+/**
+ * The fields on this farm that came from somewhere other than its own source,
+ * grouped by who supplied them.
+ *
+ * Returns an empty array for almost every farm. A row here means the page must
+ * not credit one source for work another did — which is exactly what happened
+ * before this existed: an OpenStreetMap row was crediting OSM for an address
+ * the Connecticut board supplied.
+ */
+export function fieldCredits(orchard: {
+  import_source: string
+  field_sources?: Record<string, string>
+}): { name: string; fields: string[] }[] {
+  const bySource = new Map<string, string[]>()
+  for (const [field, source] of Object.entries(orchard.field_sources ?? {})) {
+    if (source === orchard.import_source) continue
+    const label = FIELD_NAMES[field] ?? field
+    bySource.set(source, [...(bySource.get(source) ?? []), label])
+  }
+  return [...bySource].map(([key, fields]) => ({
+    name: SOURCE_BY_KEY.get(key)?.name ?? key,
+    // Stable order, so the sentence does not reshuffle between builds.
+    fields: fields.sort(),
+  }))
+}
+
 /**
  * The credit line for one row.
  *

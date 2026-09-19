@@ -123,6 +123,14 @@ const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
     Every listing records where it came from and under what terms, so withdrawing a
     source is one filter rather than an archaeology project.
   </p>
+  <p>
+    A few rows carry a field from a second source — an OpenStreetMap listing whose
+    address comes from the state directory, say. Those fields are recorded
+    individually and credited individually on the farm's own page, rather than
+    letting the row's label take credit for work another source did. Withdrawing a
+    source therefore means dropping its rows <em>and</em> clearing that short list
+    of fields, which is still one query rather than an archaeology project.
+  </p>
   {/* The same list the orchard pages credit from, so this cannot drift out of
       agreement with what a visitor reads on the farm itself. */}
   <ul>

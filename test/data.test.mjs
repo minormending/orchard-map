@@ -165,3 +165,33 @@ test('enough orchards have a website for the scraper to be worth writing', () =>
   const withSite = ORCHARDS.filter((o) => o.website).length
   assert.ok(withSite > 100, `only ${withSite} have a website`)
 })
+
+test('a field credited to another source names one we can name', () => {
+  /*
+   * Provenance is per row, and a row can have two sources. Rose's Berry Farm
+   * is an OpenStreetMap listing whose address, town and phone come from the
+   * Connecticut board — so its page must credit the board for those and OSM
+   * for the rest, rather than letting the row's label take credit for work
+   * another source did.
+   *
+   * Anything recorded here has to be nameable for the same reason the row's
+   * own source does: an unnameable source has nowhere honest to sit.
+   */
+  const source = readFileSync(new URL('../src/lib/sources.ts', import.meta.url), 'utf8')
+  const keys = new Set([...source.matchAll(/^\s*key: '([a-z]+)',$/gm)].map((m) => m[1]))
+
+  const FIELDS = new Set([
+    'name', 'geog', 'address', 'town', 'state', 'zip', 'phone', 'website', 'tags',
+  ])
+
+  for (const o of ORCHARDS) {
+    for (const [field, from] of Object.entries(o.field_sources ?? {})) {
+      assert.ok(FIELDS.has(field), `${o.name}: field_sources names "${field}", not a roster field`)
+      assert.ok(keys.has(from), `${o.name}: ${field} credited to "${from}", which sources.ts cannot name`)
+      assert.notEqual(
+        from, o.import_source,
+        `${o.name}: ${field} is recorded as coming from its own source, which says nothing`,
+      )
+    }
+  }
+})

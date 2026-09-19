@@ -3875,6 +3875,11 @@
     "import_source": "osm",
     "import_id": "way/958246607",
     "import_licence": "ODbL-1.0",
+    "field_sources": {
+      "town": "ctapples",
+      "phone": "ctapples",
+      "address": "ctapples"
+    },
     "imported_at": "2026-09-17"
   },
   {

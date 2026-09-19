@@ -52,6 +52,12 @@ const { rows } = await client.query(`
     o.hayride, o.corn_maze, o.petting_zoo, o.food_on_site, o.cider_donuts,
     o.position_precision,
     o.import_source, o.import_id, o.import_licence,
+    /* Only the fields that came from somewhere other than o.import_source.
+       Absent means "as labelled", which is almost every field of almost every
+       farm — see migration 014. */
+    (select jsonb_object_agg(fs.field, fs.import_source)
+       from orchard_field_sources fs
+      where fs.orchard_id = o.id) as field_sources,
     coalesce(
       (select array_agg(ov.variety order by v.start_doy nulls last, v.name)
          from orchard_varieties ov
@@ -121,6 +127,7 @@ const exported = rows.map((r) => {
     import_source: r.import_source,
     import_id: r.import_id,
     import_licence: r.import_licence,
+    ...(r.field_sources ? { field_sources: r.field_sources } : {}),
     imported_at: prior?.imported_at ?? new Date().toISOString().slice(0, 10),
   }
 })

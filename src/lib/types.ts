@@ -55,6 +55,16 @@ export interface Orchard {
   import_licence: string
   imported_at: string
 
+  /**
+   * Fields that came from somewhere other than `import_source`.
+   *
+   * Absent on almost every farm, because almost every field came from the
+   * source the row is labelled with. Present when a row has been enriched
+   * from another directory — Rose's Berry Farm is an OpenStreetMap row whose
+   * address, town and phone come from the Connecticut board.
+   */
+  field_sources?: Record<string, string>
+
   // ---- everything below arrives in Phase 2+ and is null until it does ----
 
   status?: OrchardStatus

@@ -93,6 +93,32 @@ for (const o of orchards) {
   )
 }
 
+/*
+ * Per-field provenance, for the handful of rows enriched from a second source.
+ *
+ * Keyed by (import_source, import_id) rather than by orchard id, because ids
+ * are generated and a seeded database has different ones. Left out at first,
+ * which would have meant a fresh database crediting OpenStreetMap for an
+ * address the Connecticut board supplied — the exact thing the table exists
+ * to stop.
+ */
+const enriched = orchards.filter((o) => o.field_sources)
+if (enriched.length > 0) {
+  out.push(``)
+  out.push(`-- Fields that came from a source other than the row's own.`)
+  for (const o of enriched) {
+    for (const [field, from] of Object.entries(o.field_sources)) {
+      out.push(
+        `insert into orchard_field_sources (orchard_id, field, import_source, import_licence) ` +
+          `select id, ${q(field)}, ${q(from)}, ` +
+          `${q(from === 'osm' ? 'ODbL-1.0' : 'unstated')} from orchards ` +
+          `where import_source = ${q(o.import_source)} and import_id = ${q(o.import_id)} ` +
+          `on conflict (orchard_id, field) do nothing;`,
+      )
+    }
+  }
+}
+
 out.push(``)
 out.push(`commit;`)
 out.push(``)
