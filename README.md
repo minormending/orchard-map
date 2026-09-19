@@ -5,18 +5,21 @@
 A map of apple orchards within a day trip of New York, built around the
 question the other maps do not answer: **is it worth the drive this weekend?**
 
+**New here? Start with [docs/](docs/README.md)** — how the whole thing works,
+in six pages with diagrams, written for somebody who has just cloned it.
+
 Google Maps knows an orchard exists. It does not know whether picking is open
 today or the trees are picked out, which varieties are ripe this week, whether
 there is hard cider or only the sweet stuff, whether dogs are allowed, or
 whether you need a timed ticket. Those are the facts that decide a two-hour
 drive with children in the car.
 
-248 orchards, cider mills and farm markets — 94 of them pick-your-own.
+253 orchards, cider mills and farm markets — 100 of them pick-your-own.
 
 | state | listings | source |
 | --- | --- | --- |
 | NY | 189 | [New York Apple Association](https://www.applesfromny.com/) |
-| CT | 38 | [Connecticut Apple Marketing Board](https://ctapples.org/find-a-farm/) |
+| CT | 43 | [Connecticut Apple Marketing Board](https://ctapples.org/find-a-farm/) |
 | PA | 17 | [PA Preferred](https://papreferred.com/search) |
 | MA | 4 | OpenStreetMap leftovers |
 | NJ | 0 | see below |
