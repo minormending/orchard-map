@@ -33,8 +33,8 @@
       "farm_market",
       "heirloom"
     ],
-    "hours": "Monday 4:00pm - 8:00pm. Tuesday 4:00pm - 8:00pm. Wednesday 4:00pm - 9:00pm. Thursday 4:00pm - 10:00pm. Friday 3:00pm - 10:00pm. Saturday 12:00pm - 10:00pm. Sunday 12:00pm - 8:00pm",
-    "checked_at": "2026-09-18T12:08:44.903Z",
+    "hours": "Monday 4:00pm - 8:00pm; Tuesday 4:00pm - 8:00pm; Wednesday 4:00pm - 9:00pm; Thursday 4:00pm - 10:00pm; Friday 3:00pm - 10:00pm; Saturday 12:00pm - 10:00pm; Sunday 12:00pm - 8:00pm",
+    "checked_at": "2026-09-19T15:13:17.768Z",
     "source_url": "https://twowaybrewing.com/visit-us/",
     "import_source": "nyaa",
     "import_id": "4893",
@@ -229,7 +229,7 @@
     "upick_open": true,
     "hours": "Thursday-Sunday, 9am to 6pm. Open all holidays - Labor Day (9/7), Rosh Hashanah (9/12-9/13), Yum Kippur (9/21), Columbus Day (10/12) - from 9:00am - 6:00pm.",
     "admission": "General Admission: $3 per person (Age 2 and over), includes Free Parking and Entrance to the Apple Orchard, Petting Zoo, Play Area, and Farm Stand. +$40 for each 1/2 bushel of apples. +$25 for each 1/4 bushel of apples. Admission and PYO cash only.",
-    "checked_at": "2026-09-19T11:17:21.115Z",
+    "checked_at": "2026-09-19T15:09:52.369Z",
     "source_url": "https://appleridgeorchards.com/pick-your-own-apples/",
     "varieties": [
       "gala",
@@ -288,8 +288,8 @@
     "tags": [],
     "upick_open": true,
     "hours": "Open 9:30-5:30 daily",
-    "admission": "2026 prices: 1/2 peck (about 5 lbs) $14, 1 peck (about 10 lbs) $26, 1/2 bushel (about 20 lbs) $44",
-    "checked_at": "2026-09-19T11:17:21.115Z",
+    "admission": "The 2026 prices are: 1/2 peck (about 5 lbs) $14, 1 peck (about 10 lbs) $26, 1/2 bushel (about 20 lbs) $44. Only our bags may be used, as we will not be weighing each bag.",
+    "checked_at": "2026-09-19T15:13:17.768Z",
     "source_url": "https://www.averillfarm.com/stand-and-orchard-information",
     "import_source": "ctapples",
     "import_id": "averill-farm-washington-depot",
@@ -704,10 +704,14 @@
       "farm_market"
     ],
     "upick_open": true,
-    "hours": "PICK YOUR OWN APPLES ON SATURDAYS AND SUNDAYS ONLY AND Columbus Day 11 AM TO 4:30. Store hours are 11 am to 5pm everyday.",
-    "checked_at": "2026-09-19T11:17:21.115Z",
-    "source_url": "https://bluejayorchardsct.com/",
+    "hours": "PICK YOUR OWN APPLES ON SATURDAYS AND SUNDAYS ONLY AND Columbus Day 11 AM TO 4:30. FARM MARKET store hours are 11 am to 5pm everyday.",
+    "checked_at": "2026-09-19T15:11:25.362Z",
+    "source_url": "https://bluejayorchardsct.com/pick-your-own/",
     "varieties": [
+      "gala",
+      "mcintosh",
+      "cortland",
+      "empire",
       "macoun",
       "fuji"
     ],
@@ -779,10 +783,10 @@
       "pick_your_own"
     ],
     "upick_open": true,
-    "hours": "You Pick Hours Sept-Oct: Daily 9-5 (Last Entry to Field 4:15pm). June-Aug: Tues - Sat 9am-4pm (Last Entry to field @ 3:30pm).",
-    "admission": "Apples: Peck $25 (2 people); 1/2 Bushel $40 OR 2 for $63 (4 people). NO ticket, wristband, or entry fee is needed for U-Pick - PRE-PAID Picking container per person is the only requirement.",
+    "hours": "You Pick Hours: June-Aug Tues - Sat 9am-4pm (Last Entry to field @ 3:30pm). Sept-Oct Daily 9-5 (Last Entry to Field 4:15pm). Farm Hours Daily 9am-5pm.",
+    "admission": "NO ticket, wristband, or entry fee is needed for U-Pick. PRE-PAID Picking container per person is the only requirement. Apples: Peck $25 (2 people), 1/2 Bushel $40 OR 2 for $63 (4 people). Berries: 1 Quart $11.25 (Per person).",
     "reservations_required": false,
-    "checked_at": "2026-09-19T11:17:21.115Z",
+    "checked_at": "2026-09-19T15:12:19.443Z",
     "source_url": "https://www.bowmanorchards.com/you-pick-days/",
     "varieties": [
       "jersey-mac",
@@ -833,8 +837,8 @@
       "pick_your_own"
     ],
     "hours": "Monday: CLOSED Tuesday: CLOSED Wednesday: CLOSED Thursday: CLOSED Friday: 9am-5pm Saturday: 9am-5pm Sunday: 9am-5pm * Holiday Schedules may change",
-    "checked_at": "2026-09-19T11:17:21.115Z",
-    "source_url": "https://breezehillfarmpreserve.com/apple-orchard/",
+    "checked_at": "2026-09-19T15:10:37.736Z",
+    "source_url": "https://breezehillfarmpreserve.com/",
     "varieties": [
       "honeycrisp",
       "empire",
@@ -908,8 +912,8 @@
       "farm_market",
       "fresh_cider"
     ],
-    "hours": "FALL 2026 HOURS - OPEN DAILY. Monday - Thursday 9 a.m. - 5 p.m. Friday - Sunday 9 a.m. - 5:30 p.m.",
-    "checked_at": "2026-09-19T11:17:21.115Z",
+    "hours": "FALL 2026 HOURS OPEN DAILY Monday - Thursday 9 a.m. - 5 p.m. Friday - Sunday 9 a.m. - 5:30 p.m.",
+    "checked_at": "2026-09-19T15:13:17.768Z",
     "source_url": "https://www.briermerefarms.com/",
     "import_source": "nyaa",
     "import_id": "3503",
@@ -950,6 +954,15 @@
     "phone": "860-974-1150",
     "website": "https://www.buellsorchard.com",
     "tags": [],
+    "upick_open": true,
+    "hours": "Fall hours: Monday-Saturday 8-5, Sunday 1-5",
+    "checked_at": "2026-09-19T15:13:17.768Z",
+    "source_url": "https://www.buellsorchard.com/",
+    "varieties": [
+      "honeycrisp",
+      "mcintosh",
+      "cortland"
+    ],
     "import_source": "ctapples",
     "import_id": "buell-s-orchard-eastford",
     "import_licence": "unstated",
