@@ -164,7 +164,11 @@ console.log(`recorded ${written} observations` + (unknown ? `, ${unknown} for un
 
 if (PROMOTE) {
   const { rows } = await client.query('select promote_observations() as r')
-  console.log(`promoted ${rows[0].r.promoted}, skipped ${rows[0].r.skipped}`)
+  const r = rows[0].r
+  // `promoted` is what changed. `unchanged` is what was already applied and
+  // was left alone, which on a quiet night is most of it.
+  console.log(
+    `promoted ${r.promoted}, unchanged ${r.unchanged}, skipped ${r.skipped}`)
 }
 
 await client.end()

@@ -465,6 +465,84 @@ test('promotion respects the confidence threshold', async () => {
   ok(now[0].operator_checked_at !== null, 'and must carry when it was checked')
 })
 
+test('promoting twice changes nothing the second time', async () => {
+  /*
+   * The point of promoted_at. Before it, promotion re-applied every winner
+   * from the last seven days on every run and reported a count that could
+   * never go down — 100, twice in a row, minutes apart, with nothing recorded
+   * in between. It also meant a moderator's correction was silently replaced
+   * by the scraped value on the next run.
+   */
+  const o = await anOrchard()
+  await onlyThisTestsObservations()
+  const { rows: run } = await client.query(
+    `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
+    [o.id])
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url)
+     values ($1,$2,'hours','Daily 9-5','model',0.9,'https://x.test/')`,
+    [run[0].id, o.id])
+
+  let { rows } = await client.query(`select promote_observations(0.55) as r`)
+  eq(rows[0].r.promoted, 1, 'the first run applies it')
+  eq(rows[0].r.unchanged, 0)
+
+  ;({ rows } = await client.query(`select promote_observations(0.55) as r`))
+  eq(rows[0].r.promoted, 0, 'the second run must not re-apply it')
+  eq(rows[0].r.unchanged, 1, 'and should say so rather than stay silent')
+})
+
+test('a correction survives the next promotion', async () => {
+  // What the marker is actually protecting. The farm's own site said one
+  // thing, somebody fixed it by hand, and promotion used to put the scraped
+  // value straight back the following night.
+  const o = await anOrchard()
+  await onlyThisTestsObservations()
+  const { rows: run } = await client.query(
+    `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
+    [o.id])
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url)
+     values ($1,$2,'hours','Scraped, and wrong','model',0.9,'https://x.test/')`,
+    [run[0].id, o.id])
+  await client.query(`select promote_observations(0.55)`)
+
+  await client.query(`update orchards set hours = 'Corrected by a person' where id = $1`, [o.id])
+  await client.query(`select promote_observations(0.55)`)
+
+  const { rows } = await client.query('select hours from orchards where id = $1', [o.id])
+  eq(rows[0].hours, 'Corrected by a person', 'promotion overwrote a human correction')
+})
+
+test('a newer observation still wins after an older one was promoted', async () => {
+  /*
+   * The hazard the marker must NOT introduce. The winner is chosen across all
+   * observations, not only unstamped ones — restrict it to unstamped rows and
+   * `distinct on` hands the field to the newest observation that already lost,
+   * so a farm drifts backwards into stale values one run at a time.
+   */
+  const o = await anOrchard()
+  await onlyThisTestsObservations()
+  const { rows: run } = await client.query(
+    `insert into scrape_runs (orchard_id, host, outcome) values ($1,'x.test','ok') returning id`,
+    [o.id])
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url, created_at)
+     values ($1,$2,'hours','Last week','model',0.9,'https://x.test/', now() - interval '3 days')`,
+    [run[0].id, o.id])
+  await client.query(`select promote_observations(0.55)`)
+
+  await client.query(
+    `insert into scrape_observations (run_id, orchard_id, field, value, tier, confidence, source_url)
+     values ($1,$2,'hours','Today','model',0.9,'https://x.test/now')`,
+    [run[0].id, o.id])
+  const { rows } = await client.query(`select promote_observations(0.55) as r`)
+  eq(rows[0].r.promoted, 1, 'a newer reading must still be able to win')
+
+  const { rows: now } = await client.query('select hours from orchards where id = $1', [o.id])
+  eq(now[0].hours, 'Today')
+})
+
 test('a bad value costs one field, not the whole run', async () => {
   const o = await anOrchard()
   await onlyThisTestsObservations()
