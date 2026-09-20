@@ -64,7 +64,23 @@ deny() {
 flat=$(printf '%s' "$command" | tr -d '"'"'"'\\')
 
 case "$flat" in
-  *"git push"*)                      deny "pushing orchard-map" ;;
+  # Branches are fine; main is not.
+  #
+  # This refused every push when it was written, because main was the only
+  # thing to push to and nothing else stood in front of it. main is now
+  # branch-protected on GitHub with enforcement on admins, so a direct push to
+  # it fails server-side whatever this file says — while refusing feature
+  # branches only stopped an agent preparing the pull request it is meant to
+  # prepare, and turned every change into four handoffs.
+  #
+  # Named here anyway rather than leaning on the server alone: the two controls
+  # fail in different ways, and a local refusal with a readable reason beats a
+  # remote rejection buried in git's output.
+  #
+  # A bare `git push` while sitting on main is allowed through to GitHub, which
+  # rejects it. This cannot see the current branch, and guessing would be worse
+  # than letting the authoritative check answer.
+  *"git push"*main*)                 deny "pushing to main — open a pull request" ;;
   *"export-data.mjs"*--apply*)       deny "publishing the exported data" ;;
   *import-*.mjs*--apply*)            deny "writing imported orchards to the database" ;;
   *"db.mjs migrate"*)                deny "applying migrations" ;;
