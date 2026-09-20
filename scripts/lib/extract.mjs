@@ -138,10 +138,75 @@ const OPEN_PATTERNS = [
   /\bopen (daily|weekends|every day)\b[^.!?\n]{0,30}\b(pick|apple)/i,
 ]
 
+/**
+ * A closure that is about TODAY is not a closure of the season.
+ *
+ * `upick_open` means "their site says picking is running this season". Farms
+ * shut the orchard for a day all the time — rain, mud, a wedding — and say so
+ * in a banner, which is the most prominent text on the page and therefore the
+ * first thing a closed pattern hits. From a real run on 20 September, at
+ * Bowman Orchards:
+ *
+ *     "OUTSIDE Activities (U-Pick/Rides & Attractions) CLOSED TODAY 9/20
+ *      due to heavy rains!!"
+ *
+ * That scored `upick_open=false` at 0.75 — above the promotion threshold —
+ * while the same site said "Currently Picking: Apples, & Raspberries" and sold
+ * 2026 season picking containers. The banner is evidence the season is ON: a
+ * farm does not announce today's rain closure in a season it is not running.
+ *
+ * Note what this is NOT. It is not a pattern that decides whether the closure
+ * has expired — that needs today's date, and a regex has no idea what day it
+ * is, which is the same reason open claims are left to the model tier. It only
+ * recognises that the sentence is scoped to a day rather than to a season, and
+ * declines to answer a seasonal question with a daily one. The farm then falls
+ * through to the queue and a reader settles it against the calendar.
+ */
+const DAY_SCOPED = [
+  /\b(today|tonight|tomorrow|this (morning|afternoon|evening)|right now|at this time|currently)\b/i,
+  /\b(due to|because of|owing to)\b[^.!?\n]{0,30}\b(weather|rain|storm|wind|snow|ice|frost|fog|lightning|mud|heat|flooding)\b/i,
+  /\b(rained out|weather permitting|weather dependent)\b/i,
+  /\bclos(ed|ing)\b[^.!?\n]{0,20}\b(mon|tues?|wed(nes)?|thur?s?|fri|sat(ur)?|sun)(day)?s?\b/i,
+  /\b\d{1,2}\/\d{1,2}(\/\d{2,4})?\b/,
+  /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b/i,
+]
+
+/**
+ * ...unless the sentence says "season" itself, which settles the scope.
+ *
+ * Checked BEFORE the day patterns and wins over them, so "closed for the
+ * season as of October 31" stays a season claim rather than being thrown out
+ * for containing a date.
+ */
+const SEASON_SCOPED =
+  /\b(for (the|this) (season|year)|next (season|year)|until next|rest of (the|this) season|season (is|has) (ended|finished|wrapped))\b/i
+
+/** Is this closure about one day rather than about the season? */
+function isDayScoped(sentence) {
+  if (SEASON_SCOPED.test(sentence)) return false
+  return DAY_SCOPED.some((re) => re.test(sentence))
+}
+
+/** Every place a pattern matches, not just the first. */
+function* allMatches(re, text) {
+  const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g')
+  let m
+  while ((m = g.exec(text)) !== null) {
+    yield m
+    if (m.index === g.lastIndex) g.lastIndex++
+  }
+}
+
 export function extractUpickOpen(text, url) {
   for (const re of CLOSED_PATTERNS) {
-    const m = re.exec(text)
-    if (m) return [obs('upick_open', 'false', 'heuristic', 0.75, url, sentenceAround(text, m.index))]
+    for (const m of allMatches(re, text)) {
+      const sentence = sentenceAround(text, m.index)
+      // A rain-day banner is not a season claim. Skip it and keep reading:
+      // the same page may still carry a real "closed for the season" further
+      // down, and that one should still count.
+      if (isDayScoped(sentence)) continue
+      return [obs('upick_open', 'false', 'heuristic', 0.75, url, sentence)]
+    }
   }
   for (const re of OPEN_PATTERNS) {
     const m = re.exec(text)

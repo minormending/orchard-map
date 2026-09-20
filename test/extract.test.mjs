@@ -86,6 +86,38 @@ test('a closed claim may, and outranks an open one on the same page', () => {
   assert.equal(both[0].value, 'false')
 })
 
+test('a rain-day closure is not a season closure', () => {
+  // Bowman Orchards, read on 20 September. This banner scored
+  // upick_open=false at 0.75 — above the promotion threshold — on a farm whose
+  // own site said "Currently Picking: Apples, & Raspberries" the same day.
+  const banner = 'OUTSIDE Activities (U-Pick/Rides & Attractions ) CLOSED TODAY 9/20 due to heavy rains!!'
+  assert.deepEqual(extractUpickOpen(banner, URL_), [],
+    'a closure scoped to today must not answer a question about the season')
+
+  // Blue Jay Orchards, the same evening, same shape.
+  const blueJay = 'PYO APPLES CLOSED FOR TODAY SEPT.20 WE ARE OPENING SEPTEMBER 21 FROM 11 AM TO 4 PM'
+  assert.deepEqual(extractUpickOpen(blueJay, URL_), [])
+
+  // Weekly rhythm, not a season claim either.
+  assert.deepEqual(extractUpickOpen('U-pick is closed Mondays and Tuesdays.', URL_), [])
+  assert.deepEqual(extractUpickOpen('No u-pick today, the orchard is too wet due to rain.', URL_), [])
+})
+
+test('a real season closure still gets through, banner or no banner', () => {
+  // The guard must not become a way for every closure to escape.
+  const both = 'U-Pick CLOSED TODAY 9/20 due to heavy rains!!\nOur u-pick is closed for the season. See you in 2027!'
+  const found = extractUpickOpen(both, URL_)
+  assert.equal(found.length, 1)
+  assert.equal(found[0].value, 'false')
+  assert.ok(found[0].confidence >= 0.55)
+  assert.match(found[0].evidence, /for the season/,
+    'the season sentence is the evidence, not the rain banner')
+
+  // A date in the sentence does not disqualify it when it says "season".
+  const dated = extractUpickOpen('We are closing for the season on October 31.', URL_)
+  assert.equal(dated[0].value, 'false')
+})
+
 test('an ambiguous page yields nothing at all', () => {
   assert.deepEqual(extractUpickOpen('Welcome to our farm. We have been growing apples since 1910.', URL_), [])
 })
