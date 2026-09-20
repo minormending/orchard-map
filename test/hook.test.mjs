@@ -52,8 +52,8 @@ test('the guard is executable', () => {
 test('it refuses every way of publishing orchard-map', () => {
   for (const command of [
     `${PUSH} -q origin main`,
-    PUSH,
-    `cd ${O} && ${PUSH}`,
+    `${PUSH} origin HEAD:main`,
+    `cd ${O} && ${PUSH} origin main`,
     'node scripts/export-data.mjs --apply',
     'node scripts/import-ctapples.mjs --apply',
     'node scripts/db.mjs migrate',
@@ -80,6 +80,30 @@ test('it leaves the daily reader alone', () => {
   ]) {
     assert.equal(decide(command, O), 'ALLOW', command)
   }
+})
+
+test('it lets an agent prepare a pull request', () => {
+  /*
+   * Pushing a feature branch is how a change gets proposed, and refusing it
+   * only made every change a relay of four handoffs. main stays blocked here
+   * AND server-side, so the branch push is the one loosening that costs
+   * nothing: the branch cannot become main without a merge, and merges are
+   * blocked above.
+   */
+  for (const command of [
+    `${PUSH} -u origin publishing-guard`,
+    `${PUSH} origin fix/some-thing`,
+    'git checkout -b fix/some-thing',
+  ]) {
+    assert.equal(decide(command, O), 'ALLOW', command)
+  }
+})
+
+test('a branch named after main is still not main', () => {
+  // The rule matches the word anywhere in the command, so a branch whose name
+  // contains "main" is refused too. Over-blocking, deliberately: renaming the
+  // branch is cheap and a missed push to main is not.
+  assert.equal(decide(`${PUSH} origin maintenance-docs`, O), 'BLOCK')
 })
 
 test('it leaves ordinary work alone', () => {
