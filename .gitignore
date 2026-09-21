@@ -7,3 +7,4 @@ dist/
 scripts/.cache/
 observations.json
 scripts/.queue/
+scripts/.pending.json

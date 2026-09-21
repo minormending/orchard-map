@@ -14,15 +14,15 @@ there is hard cider or only the sweet stuff, whether dogs are allowed, or
 whether you need a timed ticket. Those are the facts that decide a two-hour
 drive with children in the car.
 
-253 orchards, cider mills and farm markets — 100 of them pick-your-own.
+301 orchards, cider mills and farm markets — 100 of them pick-your-own.
 
 | state | listings | source |
 | --- | --- | --- |
-| NY | 189 | [New York Apple Association](https://www.applesfromny.com/) |
+| NY | 217 | [New York Apple Association](https://www.applesfromny.com/), plus 28 compiled by hand |
 | CT | 43 | [Connecticut Apple Marketing Board](https://ctapples.org/find-a-farm/) |
+| NJ | 20 | compiled by hand — see below |
 | PA | 17 | [PA Preferred](https://papreferred.com/search) |
 | MA | 4 | OpenStreetMap leftovers |
-| NJ | 0 | see below |
 
 New York's source is the only one that publishes categories, so its listings
 arrive knowing whether a farm does pick-your-own. The others are rosters —
@@ -33,10 +33,16 @@ Pennsylvania looks thin for a good reason: Adams County, the state's apple
 capital, is two hundred miles from New York City and falls outside the
 day-trip radius entirely. What is here is the north-east.
 
-New Jersey has none, and not for want of orchards. `findjerseyfresh.com`, the
-state's own directory, serves `Disallow: /` to every crawler. That is a clear
-answer and it is respected, so NJ waits on OpenStreetMap and on people adding
-farms themselves.
+New Jersey has no directory to import. `findjerseyfresh.com`, the state's own,
+serves `Disallow: /` to every crawler — a clear answer, and it is respected.
+So its twenty farms were compiled by hand instead and loaded through
+`import-userlist.mjs`, which puts a hand-made list through the same placement
+rules as a scraped one: geocoded, boxed, duplicate-checked, and anything it
+will not place confidently left in `scripts/.candidates/` for a person.
+
+Those rows carry `import_source = 'user'`, the same as a farm somebody submits
+through the site, because in both cases the answer to "who says so" is a
+person rather than a directory.
 
 Static site on GitHub Pages, Postgres behind it, no server in between. The
 browser can read public data and propose writes; it never decides whether a
@@ -156,8 +162,8 @@ grow apples, like Fishkill Farms, stay.
 300 rows. That is right for thousands of restrooms across a city, where the
 viewport *is* the query.
 
-Here the entire region is smaller than one of those pages — 199 rows, about
-95KB — so fetching it is pure latency. And unlike restrooms, this map is found
+Here the entire region is smaller than one of those pages — 301 rows, about
+160KB — so fetching it is pure latency. And unlike restrooms, this map is found
 through Google: "apple picking warwick ny" is the query that matters, and a
 single-page app cannot rank for it, because there is one URL and its markup is
 a loading state.
@@ -189,6 +195,34 @@ has. It **never writes SQL**: its only write path is
 same closed vocabularies the schema uses and refuses the rest. And it **never
 promotes**; recording an observation is not changing the map.
 
+### Reading a farm before it is on the map
+
+A submitted orchard lands hidden, and the crawler reads its targets out of
+`src/data/orchards.json`, which holds what is published. So a submission could
+only be crawled *after* somebody approved it — when what the farm's own site
+says is most of what decides whether to approve it at all.
+
+```bash
+node scripts/export-data.mjs --pending   # writes scripts/.pending.json
+node scripts/scrape.mjs --pending --queue
+```
+
+The first publishes nothing: it writes the submissions awaiting review to a
+gitignored file, because they are unreviewed rows typed by strangers and
+committing them is the one thing `hidden` exists to prevent. The second crawls
+them first, queues them whatever the regexes found — for a submission the
+question underneath is whether this is a real farm at all, and no regex has an
+opinion about that — and marks the queue file `pending_review` so the reader
+knows the pin is not on the map yet.
+
+That the crawler will now fetch a URL a stranger typed is a genuinely new
+thing, and `scripts/lib/hosts.mjs` is the door it goes through: no IP
+literals, no `localhost` or `.local` or `.internal`, and a name that resolves
+to a private address is refused. The nightly read runs on a laptop inside a
+home network, and `http://169.254.169.254/latest/meta-data/` is a thing a URL
+can say. What that does *not* close — DNS rebinding between the check and the
+fetch — is written down in that file rather than left to be discovered.
+
 The instructions live in `.claude/skills/read-farm-sites/SKILL.md`, versioned
 with the code they act on, so they change in the same commit as the schema
 they depend on.
@@ -209,7 +243,7 @@ says, in as many words, that its hours have not been checked.
 pnpm test
 ```
 
-Forty tests across four suites, all guarding things that would otherwise fail
+A hundred and sixteen tests, all guarding things that would otherwise fail
 silently:
 
 - **filters** — tags **AND** rather than OR. OR makes every extra tick return
@@ -221,6 +255,10 @@ silently:
   into a *picking* window; Braeburn's reads "October through April".
 - **extract** — the three ways the scraper has already been wrong, each a real
   page fragment rather than a hypothetical.
+- **website** — what a submitted URL may be, run over every website already on
+  the map: if the rule would reject or rewrite one of them, the rule is wrong.
+  Also the private-address ranges, walked at both edges, because the first
+  version let `240.0.0.1` through.
 
 ## Build and deploy
 

@@ -492,6 +492,135 @@ test('a submission with no state at all is still accepted', async () => {
   eq(made[0].state, null)
 })
 
+test('a website is optional, and when given has to be one', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+
+  /*
+   * The column is what makes a row reachable at all: `scrape.mjs` picks its
+   * targets with `orchards.filter(o => o.website)` and everything the map
+   * knows past a name and a pin comes from reading that site. Before this
+   * parameter existed a submitted farm could never say anything about itself.
+   */
+  const { rows } = await client.query(
+    `select submit_orchard('Wired Farm', 41.7, -75.7, '1 Lane', 'Nowhere', 'NY',
+                           '{}', null, 'https://abmasfarm.com') as r`)
+  eq(rows[0].r.ok, true)
+  const { rows: made } = await client.query(
+    'select website from orchards where id = $1', [rows[0].r.id])
+  eq(made[0].website, 'https://abmasfarm.com', 'stored as typed — a URL is not ours to rewrite')
+
+  /*
+   * A bare host is the interesting refusal. It looks filled in, and it breaks
+   * both consumers without a word: `new URL()` throws inside a catch that
+   * skips the farm, and `href="abmasfarm.com"` on the farm's page is a
+   * RELATIVE link. The browser adds the scheme before it gets here; a caller
+   * that did not is told rather than obliged.
+   */
+  await raises(
+    () => client.query(
+      `select submit_orchard('Bare Farm', 41.75, -75.75, '1 Lane', 'Nowhere', 'NY',
+                             '{}', null, 'abmasfarm.com')`),
+    { code: '22023' })
+
+  // An anchor on a published page, pointing wherever a stranger says.
+  await raises(
+    () => client.query(
+      `select submit_orchard('Hostile Farm', 41.76, -75.76, '1 Lane', 'Nowhere', 'NY',
+                             '{}', null, 'javascript:alert(1)')`),
+    { code: '22023' })
+
+  // Parses, and is not a website anybody has.
+  await raises(
+    () => client.query(
+      `select submit_orchard('Hostless Farm', 41.77, -75.77, '1 Lane', 'Nowhere', 'NY',
+                             '{}', null, 'https://abmasfarm')`),
+    { code: '22023' })
+
+  // Truncating would leave a URL that still links and still crawls, pointing
+  // somewhere else. Migration 016's lesson, in a different column.
+  await raises(
+    () => client.query(
+      `select submit_orchard('Verbose Farm', 41.78, -75.78, '1 Lane', 'Nowhere', 'NY',
+                             '{}', null, $1::text)`,
+      ['https://abmasfarm.com/' + 'a'.repeat(500)]),
+    { code: '22023' })
+})
+
+test('a submission with no website is still accepted', async () => {
+  /*
+   * 85 of the 301 rows on the map have no website, so requiring one would
+   * refuse the ordinary case. It costs the farm its facts, not its pin.
+   */
+  const alice = await makeUser('alice')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Offline Farm', 41.8, -75.8, '1 Lane', 'Nowhere', 'NY') as r`)
+  eq(rows[0].r.ok, true)
+  const { rows: made } = await client.query(
+    'select website from orchards where id = $1', [rows[0].r.id])
+  eq(made[0].website, null)
+})
+
+test('pending_submissions is what nobody has looked at yet', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Proposed Farm', 41.85, -75.85, '1 Lane', 'Nowhere', 'NY',
+                           '{}', null, 'https://abmasfarm.com') as r`)
+  const id = rows[0].r.id
+
+  const inView = async () => {
+    const { rows: r } = await client.query(
+      'select count(*)::int as n from pending_submissions where id = $1', [id])
+    return r[0].n === 1
+  }
+
+  ok(await inView(), 'a fresh submission is awaiting review')
+
+  /*
+   * The distinction the view exists for. `status = 'hidden'` is also where a
+   * moderator puts a farm that has closed down — Annutto's Farm Stand is
+   * sitting there now — and re-crawling those every night, or taking fresh
+   * observations about them, is what hiding them was meant to stop.
+   */
+  await client.query(
+    `update flags set resolved_at = now()
+      where target_id = $1 and kind = 'submission'`, [id])
+  eq(await inView(), false, 'somebody looked, so it is no longer awaiting review')
+
+  await client.query(
+    `insert into flags (target_type, target_id, kind, message)
+     values ('orchard', $1, 'moderator', 'closed permanently')`, [id])
+  eq(await inView(), false, 'a moderator flag is not a submission flag')
+
+  // And an ordinary live farm is not in it either, open flag or no.
+  const { rows: active } = await client.query(
+    `select count(*)::int as n from pending_submissions p
+      join orchards o on o.id = p.id where o.status = 'active'`)
+  eq(active[0].n, 0, 'nothing active is awaiting review')
+})
+
+test('nobody the site can reach may read pending_submissions', async () => {
+  /*
+   * A view over `orchards` runs with its owner's privileges unless it says
+   * otherwise, so a grant here would hand the public exactly the rows `hidden`
+   * exists to withhold — unreviewed text typed by strangers, on a site that
+   * publishes what it holds.
+   */
+  /*
+   * Asked of the catalogue rather than by running a failing select. A query
+   * that raises inside `asRole` poisons the transaction before its `finally`
+   * can `reset role`, and the error that surfaces is the reset rather than the
+   * refusal the test is about.
+   */
+  for (const role of ['anon', 'authenticated']) {
+    const { rows } = await client.query(
+      `select has_table_privilege($1, 'pending_submissions', 'select') as can`, [role])
+    eq(rows[0].can, false, `${role} can read unreviewed submissions`)
+  }
+})
+
 test('adding an orchard needs an account', async () => {
   await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
   await raises(() => client.query(`select submit_orchard('X', 41.9, -75.9)`), { code: '42501' })

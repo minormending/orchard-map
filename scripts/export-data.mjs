@@ -4,6 +4,7 @@
  *
  *   node scripts/export-data.mjs            say what would change
  *   node scripts/export-data.mjs --apply    write src/data/orchards.json
+ *   node scripts/export-data.mjs --pending  write scripts/.pending.json
  *
  * This is the step that makes promotion mean anything. The site is static and
  * reads `src/data/orchards.json` at build time; everything upstream of here —
@@ -18,6 +19,26 @@
  * Hidden and removed orchards are left out entirely, which is how a soft
  * delete reaches the map: the row and its history stay in the database, the
  * pin stops being published.
+ *
+ * ---------------------------------------------------------------------------
+ * --pending, which publishes nothing
+ * ---------------------------------------------------------------------------
+ *
+ * A submitted farm is hidden, so it is not in `src/data/orchards.json`, and
+ * `scrape.mjs` reads its targets from that file — which meant a submission
+ * could not be crawled until after it had been approved, and approving it is
+ * the decision the crawl was supposed to inform.
+ *
+ * `--pending` writes the same row shape to `scripts/.pending.json` instead,
+ * from the `pending_submissions` view. It lives here rather than in a script
+ * of its own so there is one copy of the query and the row mapping; the
+ * crawler's idea of a farm cannot drift from the site's if both come out of
+ * the same function.
+ *
+ * That file is **gitignored on purpose**. These are unreviewed rows typed by
+ * strangers, and committing them would publish, in a public repository, the
+ * exact thing `hidden` exists to withhold. `--pending` therefore never takes
+ * `--apply`, never touches `src/data/`, and refuses to be combined with it.
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -27,7 +48,27 @@ import { dbConfig } from '@minormending/map-kit/node/connect'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = join(ROOT, 'src', 'data', 'orchards.json')
+const PENDING_OUT = join(ROOT, 'scripts', '.pending.json')
 const APPLY = process.argv.includes('--apply')
+const PENDING = process.argv.includes('--pending')
+
+if (PENDING && APPLY) {
+  process.stderr.write(
+    '--pending and --apply do different jobs and must not be combined:\n' +
+    '  --apply   publishes active farms to the site\n' +
+    '  --pending hands unreviewed submissions to the crawler, and publishes nothing\n',
+  )
+  process.exit(1)
+}
+
+/*
+ * Two sources, one shape. `pending_submissions` is defined in migration 018
+ * and is `orchards` narrowed to rows that are hidden with an open submission
+ * flag — which is not the same as `status = 'hidden'`, because that is also
+ * where a moderator puts a farm that has closed down.
+ */
+const FROM = PENDING ? 'pending_submissions o' : 'orchards o'
+const WHERE = PENDING ? 'true' : `o.status = 'active'`
 
 const client = new pg.Client(dbConfig({ root: ROOT, applicationName: 'orchard-map/export' }))
 await client.connect()
@@ -64,8 +105,8 @@ const { rows } = await client.query(`
          join varieties v on v.slug = ov.variety
         where ov.orchard_id = o.id),
       '{}') as varieties
-  from orchards o
-  where o.status = 'active'
+  from ${FROM}
+  where ${WHERE}
   order by o.slug
 `)
 
@@ -131,6 +172,27 @@ const exported = rows.map((r) => {
     imported_at: prior?.imported_at ?? new Date().toISOString().slice(0, 10),
   }
 })
+
+/*
+ * --pending stops here, before anything that compares against the published
+ * file. Every one of those comparisons is about the map, and a submission is
+ * not on the map: `gone` would read as "301 farms would come off it", which
+ * is true of this array and nonsense as a statement about the site.
+ */
+if (PENDING) {
+  const crawlable = exported.filter((e) => e.website)
+  writeFileSync(PENDING_OUT, JSON.stringify(exported, null, 2) + '\n')
+  process.stderr.write(
+    `${exported.length} submission${exported.length === 1 ? '' : 's'} awaiting review\n` +
+    exported
+      .map((e) => `    ${e.name} (${[e.town, e.state].filter(Boolean).join(', ')})` +
+                  `${e.website ? '' : ' — no website, nothing to read'}`)
+      .join('\n') +
+    (exported.length ? '\n' : '') +
+    `\n${crawlable.length} with a website\nwrote ${PENDING_OUT}\n`,
+  )
+  process.exit(0)
+}
 
 // --- what changed ------------------------------------------------------------
 

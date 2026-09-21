@@ -198,5 +198,5 @@ flowchart LR
 ```
 
 `null` is **not** a synonym for `exact`. It means nobody recorded a precision,
-which is where every other row sits. Backfilling 253 rows as exact would have
-been inventing assertions to avoid a nullable column.
+which is where every other row sits. Backfilling the whole table as exact
+would have been inventing assertions to avoid a nullable column.
