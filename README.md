@@ -14,15 +14,15 @@ there is hard cider or only the sweet stuff, whether dogs are allowed, or
 whether you need a timed ticket. Those are the facts that decide a two-hour
 drive with children in the car.
 
-253 orchards, cider mills and farm markets — 100 of them pick-your-own.
+301 orchards, cider mills and farm markets — 100 of them pick-your-own.
 
 | state | listings | source |
 | --- | --- | --- |
-| NY | 189 | [New York Apple Association](https://www.applesfromny.com/) |
+| NY | 217 | [New York Apple Association](https://www.applesfromny.com/), plus 28 compiled by hand |
 | CT | 43 | [Connecticut Apple Marketing Board](https://ctapples.org/find-a-farm/) |
+| NJ | 20 | compiled by hand — see below |
 | PA | 17 | [PA Preferred](https://papreferred.com/search) |
 | MA | 4 | OpenStreetMap leftovers |
-| NJ | 0 | see below |
 
 New York's source is the only one that publishes categories, so its listings
 arrive knowing whether a farm does pick-your-own. The others are rosters —
@@ -33,10 +33,16 @@ Pennsylvania looks thin for a good reason: Adams County, the state's apple
 capital, is two hundred miles from New York City and falls outside the
 day-trip radius entirely. What is here is the north-east.
 
-New Jersey has none, and not for want of orchards. `findjerseyfresh.com`, the
-state's own directory, serves `Disallow: /` to every crawler. That is a clear
-answer and it is respected, so NJ waits on OpenStreetMap and on people adding
-farms themselves.
+New Jersey has no directory to import. `findjerseyfresh.com`, the state's own,
+serves `Disallow: /` to every crawler — a clear answer, and it is respected.
+So its twenty farms were compiled by hand instead and loaded through
+`import-userlist.mjs`, which puts a hand-made list through the same placement
+rules as a scraped one: geocoded, boxed, duplicate-checked, and anything it
+will not place confidently left in `scripts/.candidates/` for a person.
+
+Those rows carry `import_source = 'user'`, the same as a farm somebody submits
+through the site, because in both cases the answer to "who says so" is a
+person rather than a directory.
 
 Static site on GitHub Pages, Postgres behind it, no server in between. The
 browser can read public data and propose writes; it never decides whether a
@@ -156,8 +162,8 @@ grow apples, like Fishkill Farms, stay.
 300 rows. That is right for thousands of restrooms across a city, where the
 viewport *is* the query.
 
-Here the entire region is smaller than one of those pages — 199 rows, about
-95KB — so fetching it is pure latency. And unlike restrooms, this map is found
+Here the entire region is smaller than one of those pages — 301 rows, about
+160KB — so fetching it is pure latency. And unlike restrooms, this map is found
 through Google: "apple picking warwick ny" is the query that matters, and a
 single-page app cannot rank for it, because there is one URL and its markup is
 a loading state.
