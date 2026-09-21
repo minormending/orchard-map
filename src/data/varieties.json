@@ -612,5 +612,20 @@
     "harvest_source": "regional-estimate",
     "import_source": "nyaa",
     "import_licence": "unstated"
+  },
+  {
+    "slug": "pink-lady",
+    "name": "Pink Lady",
+    "flavour": "balanced",
+    "profile": [],
+    "best_for": [],
+    "hint": null,
+    "start_doy": 293,
+    "end_doy": 314,
+    "harvest_from": "10-20",
+    "harvest_to": "11-10",
+    "harvest_source": "regional-estimate",
+    "import_source": "user",
+    "import_licence": "user-submitted"
   }
 ]

@@ -78,7 +78,40 @@ const HARVEST = {
   'braeburn':         ['10-10', '11-01'],
   'granny-smith':     ['10-10', '11-01'],
   'evercrisp':        ['10-20', '11-10'],
+  'pink-lady':        ['10-20', '11-10'],
 }
+
+/**
+ * Varieties the association does not list.
+ *
+ * Its `varieties` post type is a New York growers' vocabulary, and it is
+ * complete for what New York promotes rather than for what the farms on this
+ * map grow. Pink Lady is the first one that mattered: Andersen Farms in Sparta
+ * publishes it among the ten varieties in its orchard, and on 21 September a
+ * reader had to leave it unrecorded because the word did not exist here — four
+ * of that farm's ten did, and the other three are genuinely obscure. This one
+ * is not.
+ *
+ * Its window comes from the same class of source as every other row in
+ * HARVEST: Apple Ridge Orchards in Warwick publishes a ripening schedule
+ * putting Pink Lady in "Mid-Late October", alongside Fuji, Evercrisp and
+ * Mutsu. It gets Evercrisp's window, which is the latest the table carries,
+ * and the same `regional-estimate` label — it is not a fact about anybody's
+ * trees and is never rendered as one.
+ *
+ * `profile`, `best_for` and `hint` are left empty, as Autumn Crisp's and
+ * Evercrisp's already are. The association writes that copy for its own
+ * varieties and there is none to borrow; inventing tasting notes to fill a
+ * column is exactly the sort of plausible detail this project does not
+ * publish. An empty list renders as nothing.
+ *
+ * Provenance is `user`, which `src/lib/sources.ts` already names "a person, by
+ * hand". That is what this is, and it is a key the source table knows rather
+ * than a new one it would render raw.
+ */
+const BEYOND_NYAA = [
+  { slug: 'pink-lady', name: 'Pink Lady', flavour: 'balanced' },
+]
 
 const stripTags = (html) =>
   String(html ?? '')
@@ -172,10 +205,46 @@ for (const row of rows) {
   })
 }
 
+/*
+ * The same shape, through the same window lookup, so there is one table of
+ * picking dates to read and one place a window can be wrong.
+ */
+for (const extra of BEYOND_NYAA) {
+  if (varieties.some((v) => v.slug === extra.slug)) {
+    // The association has started listing it. Theirs is the better row — it
+    // carries their profile copy — and this one should come out of the file
+    // above rather than quietly shadow it.
+    process.stderr.write(`${extra.name} is in the association's list now; drop it from BEYOND_NYAA\n`)
+    continue
+  }
+  const window = HARVEST[extra.slug] ?? null
+  if (!window) missing.push(`${extra.name} (${extra.slug})`)
+
+  varieties.push({
+    slug: extra.slug,
+    name: extra.name,
+    flavour: extra.flavour,
+    profile: [],
+    best_for: [],
+    hint: null,
+    start_doy: window ? doy(window[0]) : null,
+    end_doy: window ? doy(window[1]) : null,
+    harvest_from: window?.[0] ?? null,
+    harvest_to: window?.[1] ?? null,
+    harvest_source: window ? 'regional-estimate' : null,
+    import_source: 'user',
+    import_licence: 'user-submitted',
+  })
+}
+
 varieties.sort((a, b) => (a.start_doy ?? 999) - (b.start_doy ?? 999) || a.name.localeCompare(b.name))
+
+const byHand = varieties.filter((v) => v.import_source === 'user')
 
 process.stderr.write(`
 ${varieties.length} varieties
+  from the association: ${varieties.length - byHand.length}
+  added by hand: ${byHand.length}${byHand.length ? ` — ${byHand.map((v) => v.name).join(', ')}` : ''}
   with a picking window: ${varieties.filter((v) => v.start_doy !== null).length}
   without one: ${missing.length}${missing.length ? ` — ${missing.join(', ')}` : ''}
 `)

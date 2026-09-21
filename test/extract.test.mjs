@@ -118,6 +118,62 @@ test('a real season closure still gets through, banner or no banner', () => {
   assert.equal(dated[0].value, 'false')
 })
 
+test('a closure repeated down a schedule is a row, not a verdict', () => {
+  /*
+   * Soons Orchards, read on 21 September. An April freeze cut the crop and the
+   * farm was running a handful of ticketed dates through October — but a bare
+   * "U-Pick apples is closed", split from its date by the way a table
+   * flattens into text, scored upick_open=false at 0.75. Above the promotion
+   * threshold, on a farm that was open on select dates.
+   */
+  const soons = [
+    'September',
+    '9/5-7 (Labor Day  Weekend): U-Pick apples is closed',
+    '**RESERVATIONS required**',
+    'U-Pick apples is closed',
+    '',
+    'October weekends',
+    '10/3-4: U-Pick apples is closed',
+    '10/10 Saturday',
+    'Hope to be open, TBA',
+  ].join('\n')
+  assert.deepEqual(extractUpickOpen(soons, URL_), [],
+    'the same words dated elsewhere on the page make this a schedule')
+
+  // The bare line's neighbours carry no date, which is why reading the
+  // surrounding lines instead of the repetition does not fix this.
+  assert.deepEqual(
+    extractUpickOpen('**RESERVATIONS required**\nU-Pick apples is closed\nOctober weekends', URL_),
+    [{ field: 'upick_open', value: 'false', tier: 'heuristic', confidence: 0.75,
+       source_url: URL_, evidence: 'U-Pick apples is closed' }],
+    'on its own, with nothing dated anywhere, it is still a closure')
+})
+
+test('a schedule does not swallow the season closure underneath it', () => {
+  // The guard must not become a way for every closure to escape, and the
+  // repetition rule is a second way it could have.
+  const both = [
+    '10/3-4: U-Pick apples is closed',
+    '10/10: U-Pick apples is closed',
+    'Our u-pick is closed for the season. See you in 2027!',
+  ].join('\n')
+  const found = extractUpickOpen(both, URL_)
+  assert.equal(found.length, 1)
+  assert.equal(found[0].value, 'false')
+  assert.match(found[0].evidence, /for the season/,
+    'the season sentence wins over its own words used as a schedule')
+})
+
+test('one dated row is enough to scope the phrase', () => {
+  // Two occurrences, one dated. A farm states a season closure once; this
+  // shape is a calendar with a row that lost its date in the flattening.
+  const two = 'Sept 26: no u-pick\nno u-pick'
+  assert.deepEqual(extractUpickOpen(two, URL_), [])
+
+  // But a phrase that appears twice with no date anywhere is not a schedule.
+  assert.equal(extractUpickOpen('no u-pick\nno u-pick', URL_).length, 1)
+})
+
 test('an ambiguous page yields nothing at all', () => {
   assert.deepEqual(extractUpickOpen('Welcome to our farm. We have been growing apples since 1910.', URL_), [])
 })

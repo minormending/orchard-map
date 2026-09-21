@@ -197,15 +197,68 @@ function* allMatches(re, text) {
   }
 }
 
+/**
+ * A closure repeated down a schedule is a row, not a verdict.
+ *
+ * `isDayScoped` reads the line the match is on, which is the whole of what a
+ * banner is. A calendar is not: it puts the date in one cell and the closure
+ * in the next, and `pageText` flattens that into lines where some carry both
+ * and some carry only the closure. From a real run on 21 September, at Soons
+ * Orchards:
+ *
+ *     9/5-7 (Labor Day  Weekend): U-Pick apples is closed
+ *     **RESERVATIONS required**
+ *     U-Pick apples is closed
+ *     October weekends
+ *     10/3-4: U-Pick apples is closed
+ *
+ * The bare third line has no date in it and nothing next to it does either, so
+ * the day guard passed it and the page scored `upick_open=false` at 0.75 —
+ * above the promotion threshold. An April freeze had cut the crop and the farm
+ * was running a handful of ticketed dates through October. Promoting that
+ * would have told people a working orchard was shut for the year, which is the
+ * Altamont mistake with the sign reversed: there a regex read a finished
+ * weekend as an open season, here it reads one closed weekend as a closed one.
+ *
+ * So the scope of a closure is settled by every place the page uses the same
+ * words, not only by the line in front of us. A farm announces a season
+ * closure once. A schedule says it per row, and at least one of those rows
+ * carries its date.
+ *
+ * Widening the window instead — reading the neighbouring lines — was the first
+ * attempt and does not work here: the bare line's neighbours are
+ * "**RESERVATIONS required**" and "October weekends", neither of which is a
+ * date. The repetition is the signal, not the proximity.
+ */
 export function extractUpickOpen(text, url) {
   for (const re of CLOSED_PATTERNS) {
-    for (const m of allMatches(re, text)) {
-      const sentence = sentenceAround(text, m.index)
-      // A rain-day banner is not a season claim. Skip it and keep reading:
-      // the same page may still carry a real "closed for the season" further
-      // down, and that one should still count.
-      if (isDayScoped(sentence)) continue
-      return [obs('upick_open', 'false', 'heuristic', 0.75, url, sentence)]
+    const found = [...allMatches(re, text)].map((m) => ({
+      // The matched words alone, so "9/5-7 (Labor Day Weekend): U-Pick apples
+      // is closed" and a bare "U-Pick apples is closed" are recognisably the
+      // same claim appearing twice.
+      phrase: m[0].replace(/\s+/g, ' ').trim().toLowerCase(),
+      sentence: sentenceAround(text, m.index),
+    }))
+
+    // Phrases this page states somewhere with a date attached.
+    const scheduled = new Set(
+      found.filter((f) => isDayScoped(f.sentence)).map((f) => f.phrase))
+
+    for (const f of found) {
+      /*
+       * A sentence that says "season" settles its own scope, whatever the rest
+       * of the page does with the same words. Without this the guard would
+       * eat the real thing: a page carrying both "10/3-4: u-pick is closed"
+       * and "our u-pick is closed for the season" repeats a phrase that is
+       * scheduled elsewhere, and the second sentence is still the answer.
+       */
+      if (!SEASON_SCOPED.test(f.sentence)) {
+        // A rain-day banner is not a season claim, and neither is one row of a
+        // calendar. Skip and keep reading: the same page may still carry a
+        // real "closed for the season" further down, and that one counts.
+        if (isDayScoped(f.sentence) || scheduled.has(f.phrase)) continue
+      }
+      return [obs('upick_open', 'false', 'heuristic', 0.75, url, f.sentence)]
     }
   }
   for (const re of OPEN_PATTERNS) {

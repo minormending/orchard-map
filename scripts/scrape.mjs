@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url'
 import { PoliteFetcher } from '@minormending/map-kit/node/fetch'
 import { extractAll, pageText, rankLinks } from './lib/extract.mjs'
 import { extractWithModel, modelTierAvailable, MODEL } from './lib/model-tier.mjs'
-import { crawlable, resolves } from './lib/hosts.mjs'
+import { crawlable, resolves, siteReached, foldLanding } from './lib/hosts.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CACHE = join(ROOT, 'scripts', '.cache')
@@ -119,6 +119,13 @@ if (ONLY) targets = targets.filter((o) => o.slug.includes(ONLY))
  * deterministic observations are held back entirely — a regex cannot tell
  * which of two businesses a sentence is about, and guessing is how a farm
  * stand acquires a u-pick price it does not charge.
+ *
+ * This grouping is a FIRST GUESS and cannot be the last word, because it is
+ * made from the URL on the row and a redirect changes where that URL goes.
+ * Soons Orchards is two rows in New Hampton, one carrying soonsorchards.com
+ * and one carrying upickapples.com, which redirects there — two keys here,
+ * one site in fact. The regrouping happens against `home.url` once the site
+ * has answered; see `results` and the attribution pass at the end.
  */
 const byHost = new Map()
 const refused = []
@@ -179,6 +186,34 @@ const fetcher = new PoliteFetcher({
 const runs = []
 const observations = []
 const queued = []
+
+/**
+ * What each site turned out to be, once it had answered.
+ *
+ * Grouping by the host of the URL on the row happens before any request, and
+ * a redirect defeats it. Soons Orchards is two rows in New Hampton — one
+ * carrying soonsorchards.com, one carrying upickapples.com, which redirects
+ * there. Two keys in `byHost`, so `shared` was false for both, so the same
+ * observations from the same five pages were attributed to each listing
+ * independently. That is exactly what the shared-host rule exists to stop; it
+ * simply could not see it, because two listings arriving at one place do not
+ * look alike until one of them has arrived.
+ *
+ * The redirect is known from `home.url` after the first fetch and before any
+ * extraction — but a LATER group can land on a site an earlier one already
+ * crawled, and by then the earlier group has already had its say. So nothing
+ * is attributed during the loop. Each site's findings are parked here and
+ * settled once the run is over, when the full set of listings that reached
+ * each site is finally known.
+ *
+ * The alternative was recording a resolved host on the row so the next run
+ * groups correctly from the start. That is simpler and wrong in a way that
+ * matters: it is a cache of somebody else's DNS and redirect configuration,
+ * correct until the day a farm moves its site, and stale exactly when it
+ * would do the most damage.
+ */
+const sites = new Map()
+const results = []
 let modelCalls = 0
 let tokensUsed = 0
 
@@ -194,7 +229,6 @@ process.stderr.write(
 
 for (const [host, sharing] of hosts) {
   const orchard = sharing[0]
-  const shared = sharing.length > 1
 
   const run = {
     orchard_id: orchard.id,
@@ -211,7 +245,7 @@ for (const [host, sharing] of hosts) {
   }
 
   process.stderr.write(
-    (shared
+    (sharing.length > 1
       ? `${sharing.map((o) => o.name).join(' + ')} (${host}, shared)`
       : `${orchard.name} (${host})`) +
     (orchard.pending ? ' — awaiting review' : '') + '\n',
@@ -238,10 +272,53 @@ for (const [host, sharing] of hosts) {
     runs.push({ ...run, finished_at: new Date().toISOString() })
     continue
   }
+  /*
+   * Where the request actually landed, which is not always where it was sent.
+   *
+   * `home.url` is the final URL after redirects — it is already what
+   * `rankLinks` uses as its base, which is why upickapples.com yields
+   * soonsorchards.com sub-pages. Read it the same way the stored URL was
+   * read, so `www.` is stripped on both sides and a plain http→https hop
+   * compares equal to itself.
+   *
+   * Settled BEFORE the 304 check, and that ordering is load-bearing. A 304
+   * carries its final URL too, and in a nightly run most fetches are one. Two
+   * listings that redirect together are cached under their own stored URLs, so
+   * one can come back 304 while the other comes back fresh — and if the 304
+   * did not join the group, the fresh one would look like the only listing on
+   * the site and have its observations recorded against it alone. Which is the
+   * bug, arriving a day later.
+   */
+  const site = siteReached(home.url, host)
+  const joined = foldLanding(sites, site, sharing)
+  const group = joined ?? sites.get(site)
+
+  if (joined?.crawled) {
+    /*
+     * A listing whose website redirects onto a site already crawled this run.
+     * Its pages would be the same pages, so they are not fetched again — the
+     * polite fetcher exists to not do that — and both listings now share a
+     * site, which means neither one's deterministic observations can be
+     * attributed. Said here rather than only in the summary, because this is
+     * the line that explains why the earlier farm's findings, already printed
+     * above, are not going to be recorded.
+     */
+    run.outcome = 'same-site'
+    process.stderr.write(
+      `  redirects to ${site}, already crawled — shared with ` +
+      `${joined.listings[0].name}; neither listing's observations are recorded\n`,
+    )
+    runs.push({ ...run, finished_at: new Date().toISOString() })
+    continue
+  }
+
   if (home.notModified) {
     // Nothing has changed since last time. This should be the common case in
     // a nightly run, and it is the reason conditional requests are worth the
     // bookkeeping: most farm sites change twice a season.
+    //
+    // The group stays behind without `crawled`, so a listing that redirects
+    // here later still crawls the site and still finds this one waiting in it.
     run.outcome = 'not-modified'
     process.stderr.write('  304 not modified\n')
     runs.push({ ...run, finished_at: new Date().toISOString() })
@@ -316,14 +393,6 @@ for (const [host, sharing] of hosts) {
     }
   }
 
-  // See the grouping note above: on a shared host a deterministic observation
-  // has no way to know which of the listings it is about, so it is not made.
-  if (!shared) {
-    for (const o of best.values()) {
-      observations.push({ ...o, orchard_id: orchard.id, orchard_slug: orchard.slug })
-    }
-  }
-
   const summary = [...best.values()]
     .filter((o) => o.field !== 'variety')
     .map((o) => `${o.field}=${o.value.slice(0, 40)}`)
@@ -332,17 +401,54 @@ for (const [host, sharing] of hosts) {
   process.stderr.write(
     `  ${run.pages} pages · ${summary.join(' · ') || 'nothing'}` +
     (varietyCount ? ` · ${varietyCount} varieties` : '') +
-    // Otherwise the line reads as a list of things that were recorded, when
-    // on a shared host every one of them is being thrown away on purpose.
-    (shared ? ' — held back, shared site, left to the reader' : '') + '\n',
+    // No "held back" here any more: whether this site turns out to serve more
+    // than one listing is not settled until every group has been fetched, so
+    // it is said in the attribution pass at the end of the run instead.
+    '\n',
   )
+
+  // Parked, not attributed. See the note on `results`. `foldLanding` made
+  // this group when the site first answered; the findings hang off it, and
+  // any listing that redirects here later is appended to `listings`.
+  results.push(Object.assign(group, { crawled: true, orchard, best, pages, haveOpen, haveHours }))
+
+  runs.push({ ...run, finished_at: new Date().toISOString() })
+}
+
+// --- attribution -------------------------------------------------------------
+
+/*
+ * Now, and not before: every group has been fetched, so the set of listings
+ * that reached each site is final.
+ *
+ * The rule is unchanged from the one written for two listings carrying the
+ * same URL — on a shared site a deterministic observation has no way to know
+ * which of the listings it is about, so it is not made, and the reader is
+ * told who else is there. All that has changed is that "the same site" now
+ * means the site that answered rather than the URL that was asked for.
+ */
+for (const r of results) {
+  const shared = r.listings.length > 1
+  const { orchard, best, pages, haveOpen, haveHours } = r
+
+  if (!shared) {
+    for (const o of best.values()) {
+      observations.push({ ...o, orchard_id: orchard.id, orchard_slug: orchard.slug })
+    }
+  } else {
+    process.stderr.write(
+      `${r.listings.map((o) => o.name).join(' + ')} (${r.site}) — ` +
+      `${best.size} observation${best.size === 1 ? '' : 's'} held back, ` +
+      'shared site, left to the reader\n',
+    )
+  }
 
   /*
    * Anything the cheap tiers could not settle goes to a reader.
    *
    * `upick_open` is the field this exists for: a regex cannot tell a current
    * announcement from a three-day-old one, which is why its open claims are
-   * scored below the promotion threshold and why `haveOpen` above requires a
+   * scored below the promotion threshold and why `haveOpen` requires a
    * promotable one rather than merely any.
    *
    * A farm awaiting review is queued whatever the cheap tiers found. For a
@@ -364,9 +470,13 @@ for (const [host, sharing] of hosts) {
         ? { pending_review: true, address: orchard.address ?? null }
         : {}),
       /* When a site serves more than one listing, the reader is told so and
-         attributes each observation itself — it is the only party that can. */
+         attributes each observation itself — it is the only party that can.
+         A listing that got here by redirect is in this list too: what the
+         reader needs is who else is on the page, not how they were reached. */
       shares_site_with: shared
-        ? sharing.slice(1).map((o) => ({ slug: o.slug, name: o.name, town: o.town }))
+        ? r.listings
+            .filter((o) => o.slug !== orchard.slug)
+            .map((o) => ({ slug: o.slug, name: o.name, town: o.town }))
         : [],
       queued_at: new Date().toISOString(),
       missing: [!haveOpen && 'upick_open', !haveHours && 'hours'].filter(Boolean),
@@ -375,8 +485,6 @@ for (const [host, sharing] of hosts) {
       pages: pages.map((p) => ({ url: p.url, text: pageText(p.html).slice(0, 12_000) })),
     })
   }
-
-  runs.push({ ...run, finished_at: new Date().toISOString() })
 }
 
 writeFileSync(ETAGS, JSON.stringify(Object.fromEntries(etagStore)))

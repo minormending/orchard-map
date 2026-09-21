@@ -168,3 +168,50 @@ export async function resolves(host) {
 
   return { ok: true }
 }
+
+/**
+ * Which site a request actually reached.
+ *
+ * `crawlable()` reads the URL on the row, before anything is sent. This reads
+ * the URL that came back, which is not always the same place: upickapples.com
+ * answers as soonsorchards.com, and both are rows on this map. Same rule on
+ * both sides, so `www.` is stripped for each and a plain http→https hop
+ * compares equal to itself.
+ *
+ * Falls back to the host that was asked for when the final URL will not parse,
+ * which should not happen for a response we just read and is not worth losing
+ * a crawl over.
+ */
+export function siteReached(finalUrl, requestedHost) {
+  const landed = crawlable(finalUrl)
+  return landed.ok ? landed.host : requestedHost
+}
+
+/**
+ * Fold a landing into the sites already met this run.
+ *
+ * Returns the group these listings JOIN when the site has been seen before,
+ * and null when it is the first time — so a caller can tell "crawl this" from
+ * "this is somewhere we have already been, add the listings and move on".
+ *
+ * The distinction is the whole point. Grouping by the host on the row happens
+ * before any request and a redirect defeats it: two rows for Soons Orchards,
+ * one carrying soonsorchards.com and one carrying upickapples.com, looked like
+ * two sites and were crawled twice, and the same observations from the same
+ * pages were attributed to each listing independently. That is exactly what
+ * the shared-host rule was written to prevent — it simply could not see it,
+ * because two listings arriving at one place do not look alike until one of
+ * them has arrived.
+ *
+ * Mutates the map it is given, which is what makes it usable from inside the
+ * crawl loop: the decision has to be made as each site answers, not after.
+ */
+export function foldLanding(sites, site, listings) {
+  const seen = sites.get(site)
+  if (seen) {
+    seen.listings.push(...listings)
+    return seen
+  }
+  sites.set(site, { site, listings: [...listings] })
+  return null
+}
