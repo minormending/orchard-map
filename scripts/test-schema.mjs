@@ -411,6 +411,45 @@ test('a duplicate within 300m is refused with the neighbour named', async () => 
   ok(rows[0].r.near === at[0].name, `should name the neighbour, said ${rows[0].r.near}`)
 })
 
+test('a submission may say approximate, and may not say exact', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+
+  const { rows } = await client.query(
+    `select submit_orchard('Roadside Farm', 41.1, -75.1, 'Rt. 322 Meriden-Waterbury Road',
+                           'Nowhere', 'NY', '{}', 'approximate') as r`)
+  eq(rows[0].r.ok, true)
+  const { rows: made } = await client.query(
+    'select position_precision from orchards where id = $1', [rows[0].r.id])
+  eq(made[0].position_precision, 'approximate',
+     'the form geocoded a road, and the farm page has to be able to say so')
+
+  /*
+   * 'exact' means a source stated the position. A browser that geocoded a
+   * street is not a source, and neither is a visitor clicking a map, however
+   * sure either one felt. Accepting the claim and hoping a moderator spots it
+   * would make it indistinguishable from every surveyed row.
+   */
+  await raises(
+    () => client.query(
+      `select submit_orchard('Overconfident Farm', 41.2, -75.2, '1 Lane', 'Nowhere', 'NY', '{}', 'exact')`),
+    { code: '22023' })
+})
+
+test('a submission that says nothing about precision still records nothing', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+  // The seven-argument call the app made before the form could geocode. It
+  // still resolves, because the new parameter defaults.
+  const { rows } = await client.query(
+    `select submit_orchard('Handplaced Farm', 41.3, -75.3, '1 Lane', 'Nowhere', 'NY', '{}') as r`)
+  eq(rows[0].r.ok, true)
+  const { rows: made } = await client.query(
+    'select position_precision from orchards where id = $1', [rows[0].r.id])
+  eq(made[0].position_precision, null,
+     'null means nobody recorded a precision — it is not a claim of exactness')
+})
+
 test('adding an orchard needs an account', async () => {
   await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
   await raises(() => client.query(`select submit_orchard('X', 41.9, -75.9)`), { code: '42501' })
