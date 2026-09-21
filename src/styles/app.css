@@ -799,6 +799,10 @@ a { color: var(--accent); }
 .add-site { font-size: 0.8rem; line-height: 1.45; margin: 0; }
 .add-site:not(:empty) { margin: -0.15rem 0 0.6rem; }
 
+/* The offer to move a town out of the street box. Sits directly under the
+   field it is about, like the website note above it. */
+.add-split { font-size: 0.8rem; line-height: 1.45; margin: -0.15rem 0 0.6rem; }
+
 .add-where { font-size: 0.8rem; color: var(--ink-2); margin: 0.6rem 0; }
 
 /* What the address lookup found, under the position it set. Empty most of the
