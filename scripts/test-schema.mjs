@@ -547,6 +547,44 @@ test('a website is optional, and when given has to be one', async () => {
     { code: '22023' })
 })
 
+test('a submission carries an id to withdraw it by', async () => {
+  /*
+   * `import_source` without `import_id` puts a row inside the filter that
+   * withdraws a source and gives nobody a way to pick it out again — and
+   * `alreadyImported()`, which is how every importer avoids adding the same
+   * farm twice, matches on exactly that pair.
+   *
+   * It went unnoticed until a submission first reached the map: the other 48
+   * `user` rows were loaded by import-userlist.mjs, which sets one.
+   * test/data.test.mjs refused to publish Abma's Farm Market without it.
+   */
+  const alice = await makeUser('alice')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Handled Farm', 41.9, -75.9, '1 Lane', 'Nowhere', 'NY') as r`)
+  const { rows: made } = await client.query(
+    'select slug, import_source, import_id, import_licence from orchards where id = $1',
+    [rows[0].r.id])
+  eq(made[0].import_source, 'user')
+  eq(made[0].import_licence, 'user-submitted')
+  eq(made[0].import_id, made[0].slug, 'the id is the slug, as the importers write it')
+})
+
+test('two people proposing the same farm get two different ids', async () => {
+  // A slug collision is resolved before the id is taken from it, so the pair
+  // (source, import_id) stays unique and idempotency keeps meaning something.
+  const alice = await makeUser('alice')
+  await become(alice)
+  const a = await client.query(
+    `select submit_orchard('Twice Farm', 41.91, -75.91, '1 Lane', 'Samespot', 'NY') as r`)
+  const b = await client.query(
+    `select submit_orchard('Twice Farm', 42.5, -75.5, '2 Lane', 'Samespot', 'NY') as r`)
+  const { rows } = await client.query(
+    'select import_id from orchards where id in ($1, $2)', [a.rows[0].r.id, b.rows[0].r.id])
+  eq(rows.length, 2)
+  ok(rows[0].import_id !== rows[1].import_id, 'two submissions, two ids')
+})
+
 test('a submission with no website is still accepted', async () => {
   /*
    * 85 of the 301 rows on the map have no website, so requiring one would
