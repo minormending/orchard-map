@@ -6,6 +6,7 @@
  *   node scripts/scrape.mjs --limit 5 --model   also use the model tier
  *   node scripts/scrape.mjs --out obs.json      write observations
  *   node scripts/scrape.mjs --sql > obs.sql     emit SQL for a database
+ *   node scripts/scrape.mjs --pending           include farms awaiting review
  *
  * Writes OBSERVATIONS, never facts. Nothing in this file can change what the
  * map says; promotion is a separate, thresholded step in the database. A
@@ -37,6 +38,7 @@ import { fileURLToPath } from 'node:url'
 import { PoliteFetcher } from '@minormending/map-kit/node/fetch'
 import { extractAll, pageText, rankLinks } from './lib/extract.mjs'
 import { extractWithModel, modelTierAvailable, MODEL } from './lib/model-tier.mjs'
+import { crawlable, resolves } from './lib/hosts.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CACHE = join(ROOT, 'scripts', '.cache')
@@ -55,6 +57,7 @@ const OUT = value('out', null)
 const AS_SQL = flag('sql')
 const ONLY = value('only', null)
 const QUEUE = flag('queue')
+const PENDING = flag('pending')
 
 /**
  * The kill switch.
@@ -66,8 +69,35 @@ const QUEUE = flag('queue')
 const MAX_MODEL_CALLS = Number(process.env.ORCHARD_MAX_MODEL_CALLS ?? 250)
 const MAX_TOKENS_TOTAL = Number(process.env.ORCHARD_MAX_TOKENS ?? 2_000_000)
 
-const orchards = read('orchards.json')
 const varieties = read('varieties.json')
+
+/*
+ * Farms awaiting review, when asked for.
+ *
+ * `src/data/orchards.json` holds what is published, and a submitted farm is
+ * deliberately not in it. That made the order of events wrong: a submission
+ * could only be crawled after somebody approved it, when reading the farm's
+ * own website is most of what decides whether to approve it at all.
+ *
+ * `export-data.mjs --pending` writes these out of the database; the file is
+ * gitignored because the rows are unreviewed and typed by strangers. Absent
+ * is the normal case — CI has no database credentials and crawls the
+ * published file alone — so a missing file is not an error here.
+ */
+const PENDING_FILE = join(ROOT, 'scripts', '.pending.json')
+const pending = PENDING && existsSync(PENDING_FILE)
+  ? JSON.parse(readFileSync(PENDING_FILE, 'utf8')).map((o) => ({ ...o, pending: true }))
+  : []
+
+if (PENDING && pending.length === 0) {
+  process.stderr.write(
+    existsSync(PENDING_FILE)
+      ? 'no submissions awaiting review\n'
+      : `no ${PENDING_FILE} — run: node scripts/export-data.mjs --pending\n`,
+  )
+}
+
+const orchards = [...pending, ...read('orchards.json')]
 
 let targets = orchards.filter((o) => o.website)
 if (ONLY) targets = targets.filter((o) => o.slug.includes(ONLY))
@@ -91,13 +121,41 @@ if (ONLY) targets = targets.filter((o) => o.slug.includes(ONLY))
  * stand acquires a u-pick price it does not charge.
  */
 const byHost = new Map()
+const refused = []
 for (const o of targets) {
-  let host
-  try { host = new URL(o.website).host.replace(/^www\./, '') } catch { continue }
-  if (!byHost.has(host)) byHost.set(host, [])
-  byHost.get(host).push(o)
+  /*
+   * `lib/hosts.mjs` replaced a bare `new URL(...).host` in a try/catch here.
+   * The old version dropped anything that would not parse and said nothing,
+   * which was tolerable while every URL came from a state directory and is
+   * not now that one can come from a submission: the crawler decides what it
+   * will visit, and a refusal is worth printing either way.
+   */
+  const where = crawlable(o.website)
+  if (!where.ok) {
+    refused.push({ slug: o.slug, name: o.name, website: o.website, reason: where.reason })
+    continue
+  }
+  if (!byHost.has(where.host)) byHost.set(where.host, [])
+  // The name to look up travels with the listing: it is the one the fetch will
+  // connect to, `www.` and all.
+  byHost.get(where.host).push({ ...o, hostname: where.hostname })
 }
-const hosts = [...byHost.entries()].slice(0, LIMIT)
+
+/*
+ * Submissions first. There are rarely more than a handful, somebody is
+ * waiting on each one, and `--limit` would otherwise spend the whole run on
+ * the published farms it happened to sort before them.
+ */
+const hosts = [...byHost.entries()]
+  .sort(([, a], [, b]) => (b[0].pending ? 1 : 0) - (a[0].pending ? 1 : 0))
+  .slice(0, LIMIT)
+
+if (refused.length) {
+  process.stderr.write(
+    `not crawling ${refused.length}:\n` +
+    refused.map((r) => `  ${r.name}: ${r.website} — ${r.reason}`).join('\n') + '\n\n',
+  )
+}
 
 if (hosts.length === 0) {
   console.error('nothing to crawl')
@@ -125,7 +183,7 @@ let modelCalls = 0
 let tokensUsed = 0
 
 process.stderr.write(
-  `crawling ${hosts.length} sites (${targets.length} listings)` +
+  `crawling ${hosts.length} sites (${targets.length - refused.length} listings)` +
   (USE_MODEL
     ? modelTierAvailable()
       ? ` · model tier on (${MODEL})`
@@ -142,6 +200,7 @@ for (const [host, sharing] of hosts) {
     orchard_id: orchard.id,
     slug: orchard.slug,
     host,
+    pending: orchard.pending === true,
     started_at: new Date().toISOString(),
     outcome: 'ok',
     pages: 0,
@@ -152,10 +211,25 @@ for (const [host, sharing] of hosts) {
   }
 
   process.stderr.write(
-    shared
-      ? `${sharing.map((o) => o.name).join(' + ')} (${host}, shared)\n`
-      : `${orchard.name} (${host})\n`,
+    (shared
+      ? `${sharing.map((o) => o.name).join(' + ')} (${host}, shared)`
+      : `${orchard.name} (${host})`) +
+    (orchard.pending ? ' — awaiting review' : '') + '\n',
   )
+
+  /*
+   * The name is checked against what it resolves to, not just how it is
+   * spelled — `farm.example.com` pointing at 192.168.1.1 is the interesting
+   * case, and the syntax check above cannot see it. See lib/hosts.mjs for
+   * what this does and does not close.
+   */
+  const reachable = await resolves(orchard.hostname)
+  if (!reachable.ok) {
+    run.outcome = reachable.reason
+    process.stderr.write(`  ${run.outcome}\n`)
+    runs.push({ ...run, finished_at: new Date().toISOString() })
+    continue
+  }
 
   const home = await fetcher.get(orchard.website)
   if (!home.ok) {
@@ -270,14 +344,25 @@ for (const [host, sharing] of hosts) {
    * announcement from a three-day-old one, which is why its open claims are
    * scored below the promotion threshold and why `haveOpen` above requires a
    * promotable one rather than merely any.
+   *
+   * A farm awaiting review is queued whatever the cheap tiers found. For a
+   * published farm the question is narrow — are they picking, when are they
+   * open — and a structured answer settles it. For a submission the question
+   * underneath is whether this is a real farm that belongs on the map at all,
+   * and no regex has an opinion about that.
    */
-  if (QUEUE && (!haveOpen || !haveHours)) {
+  if (QUEUE && (orchard.pending || !haveOpen || !haveHours)) {
     queued.push({
       slug: orchard.slug,
       name: orchard.name,
       town: orchard.town,
       state: orchard.state,
       orchard_id: orchard.id,
+      /* Not on the map. Somebody submitted it and nobody has decided yet —
+         which is why this file exists before the decision instead of after. */
+      ...(orchard.pending
+        ? { pending_review: true, address: orchard.address ?? null }
+        : {}),
       /* When a site serves more than one listing, the reader is told so and
          attributes each observation itself — it is the only party that can. */
       shares_site_with: shared
@@ -300,13 +385,17 @@ if (QUEUE) {
   const dir = join(CACHE, '..', '.queue')
   mkdirSync(dir, { recursive: true })
   /*
-   * Pick-your-own farms first, because they are what people came for and what
-   * changes week to week. A farm shop's hours move far less than whether the
-   * trees have anything left on them.
+   * Submissions first, then pick-your-own.
+   *
+   * A submission is somebody waiting on a decision, and there are rarely more
+   * than a couple. After those, pick-your-own farms are what people came for
+   * and what changes week to week — a farm shop's hours move far less than
+   * whether the trees have anything left on them.
    */
   const priority = (q) => {
+    if (q.pending_review) return 0
     const o = orchards.find((x) => x.slug === q.slug)
-    return o?.tags.includes('pick_your_own') ? 0 : 1
+    return o?.tags.includes('pick_your_own') ? 1 : 2
   }
   queued.sort((a, b) => priority(a) - priority(b) || a.slug.localeCompare(b.slug))
   /*
@@ -318,8 +407,9 @@ if (QUEUE) {
    * order `ls` gives, so the prefix is what makes that instruction true rather
    * than merely plausible.
    */
+  const RANK = ['a-pending', 'b-upick', 'c-other']
   for (const q of queued) {
-    const rank = priority(q) === 0 ? 'a-upick' : 'b-other'
+    const rank = RANK[priority(q)]
     writeFileSync(join(dir, `${rank}-${q.slug}.json`), JSON.stringify(q, null, 2) + '\n')
   }
   process.stderr.write(`queued ${queued.length} farms for a reader in scripts/.queue/\n`)
@@ -331,7 +421,9 @@ const byOutcome = {}
 for (const r of runs) byOutcome[r.outcome] = (byOutcome[r.outcome] ?? 0) + 1
 
 process.stderr.write(`
-${runs.length} farms crawled
+${runs.length} farms crawled${runs.some((r) => r.pending)
+  ? `, ${runs.filter((r) => r.pending).length} of them awaiting review`
+  : ''}
   ${Object.entries(byOutcome).map(([k, v]) => `${k}: ${v}`).join(', ')}
   fetcher: ${JSON.stringify(fetcher.stats)}
   observations: ${observations.length}

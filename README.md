@@ -189,6 +189,34 @@ has. It **never writes SQL**: its only write path is
 same closed vocabularies the schema uses and refuses the rest. And it **never
 promotes**; recording an observation is not changing the map.
 
+### Reading a farm before it is on the map
+
+A submitted orchard lands hidden, and the crawler reads its targets out of
+`src/data/orchards.json`, which holds what is published. So a submission could
+only be crawled *after* somebody approved it — when what the farm's own site
+says is most of what decides whether to approve it at all.
+
+```bash
+node scripts/export-data.mjs --pending   # writes scripts/.pending.json
+node scripts/scrape.mjs --pending --queue
+```
+
+The first publishes nothing: it writes the submissions awaiting review to a
+gitignored file, because they are unreviewed rows typed by strangers and
+committing them is the one thing `hidden` exists to prevent. The second crawls
+them first, queues them whatever the regexes found — for a submission the
+question underneath is whether this is a real farm at all, and no regex has an
+opinion about that — and marks the queue file `pending_review` so the reader
+knows the pin is not on the map yet.
+
+That the crawler will now fetch a URL a stranger typed is a genuinely new
+thing, and `scripts/lib/hosts.mjs` is the door it goes through: no IP
+literals, no `localhost` or `.local` or `.internal`, and a name that resolves
+to a private address is refused. The nightly read runs on a laptop inside a
+home network, and `http://169.254.169.254/latest/meta-data/` is a thing a URL
+can say. What that does *not* close — DNS rebinding between the check and the
+fetch — is written down in that file rather than left to be discovered.
+
 The instructions live in `.claude/skills/read-farm-sites/SKILL.md`, versioned
 with the code they act on, so they change in the same commit as the schema
 they depend on.
@@ -209,7 +237,7 @@ says, in as many words, that its hours have not been checked.
 pnpm test
 ```
 
-Forty tests across four suites, all guarding things that would otherwise fail
+A hundred and sixteen tests, all guarding things that would otherwise fail
 silently:
 
 - **filters** — tags **AND** rather than OR. OR makes every extra tick return
@@ -221,6 +249,10 @@ silently:
   into a *picking* window; Braeburn's reads "October through April".
 - **extract** — the three ways the scraper has already been wrong, each a real
   page fragment rather than a hypothetical.
+- **website** — what a submitted URL may be, run over every website already on
+  the map: if the rule would reject or rewrite one of them, the rule is wrong.
+  Also the private-address ranges, walked at both edges, because the first
+  version let `240.0.0.1` through.
 
 ## Build and deploy
 

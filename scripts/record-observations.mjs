@@ -130,6 +130,33 @@ await client.connect()
 let written = 0
 let unknown = 0
 
+/*
+ * Asked for rather than assumed, because these scripts run from a working
+ * tree and not from a deploy.
+ *
+ * A pull that brings this file down before anybody has run `pnpm db:migrate`
+ * would otherwise make every write in the batch fail on a view that is not
+ * there yet — breaking the nightly reader for a farm it was not even asked
+ * about. One catalogue lookup at the top costs nothing and turns that into a
+ * line of output.
+ */
+const { rows: view } = await client.query(
+  `select to_regclass('public.pending_submissions') is not null as present`)
+const HAS_PENDING = view[0].present
+
+const SLUG_TO_ID = HAS_PENDING
+  ? `select id from orchards where slug = $1 and status = 'active'
+     union all
+     select id from pending_submissions where slug = $1`
+  : `select id from orchards where slug = $1 and status = 'active'`
+
+if (!HAS_PENDING) {
+  console.error(
+    'note: migration 018 is not applied, so observations about a farm ' +
+    'awaiting review will be counted as unknown. Run: pnpm db:migrate',
+  )
+}
+
 try {
   await client.query('begin')
 
@@ -140,8 +167,26 @@ try {
     ['session', `recorded by a scheduled reader, ${clean.length} observations`])
 
   for (const o of clean) {
-    const { rows: orchard } = await client.query(
-      `select id from orchards where slug = $1 and status = 'active'`, [o.orchard_slug])
+    /*
+     * Live farms, plus the ones awaiting review.
+     *
+     * `status = 'active'` alone was right while the crawler could only reach
+     * published rows. It is not right now that it reads a submitted farm's
+     * website before the decision — the reader would come back with exactly
+     * the facts that settle the decision and have nowhere to put them.
+     *
+     * Still not simply "any row". `hidden` is also where a moderator puts a
+     * farm that has closed down or turned out to be a duplicate, and taking
+     * fresh observations about those is what hiding them was meant to stop.
+     * `pending_submissions` (migration 018) is the narrower thing: hidden,
+     * with an open submission flag, so nobody has looked yet.
+     *
+     * Recording is not promoting and promoting is not publishing. An
+     * observation on a hidden row cannot reach the map — the export takes
+     * active rows only — so the worst case is that an approved farm arrives
+     * with its hours already known.
+     */
+    const { rows: orchard } = await client.query(SLUG_TO_ID, [o.orchard_slug])
     if (orchard.length === 0) { unknown++; continue }
 
     await client.query(

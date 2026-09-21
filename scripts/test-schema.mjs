@@ -562,6 +562,65 @@ test('a submission with no website is still accepted', async () => {
   eq(made[0].website, null)
 })
 
+test('pending_submissions is what nobody has looked at yet', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Proposed Farm', 41.85, -75.85, '1 Lane', 'Nowhere', 'NY',
+                           '{}', null, 'https://abmasfarm.com') as r`)
+  const id = rows[0].r.id
+
+  const inView = async () => {
+    const { rows: r } = await client.query(
+      'select count(*)::int as n from pending_submissions where id = $1', [id])
+    return r[0].n === 1
+  }
+
+  ok(await inView(), 'a fresh submission is awaiting review')
+
+  /*
+   * The distinction the view exists for. `status = 'hidden'` is also where a
+   * moderator puts a farm that has closed down — Annutto's Farm Stand is
+   * sitting there now — and re-crawling those every night, or taking fresh
+   * observations about them, is what hiding them was meant to stop.
+   */
+  await client.query(
+    `update flags set resolved_at = now()
+      where target_id = $1 and kind = 'submission'`, [id])
+  eq(await inView(), false, 'somebody looked, so it is no longer awaiting review')
+
+  await client.query(
+    `insert into flags (target_type, target_id, kind, message)
+     values ('orchard', $1, 'moderator', 'closed permanently')`, [id])
+  eq(await inView(), false, 'a moderator flag is not a submission flag')
+
+  // And an ordinary live farm is not in it either, open flag or no.
+  const { rows: active } = await client.query(
+    `select count(*)::int as n from pending_submissions p
+      join orchards o on o.id = p.id where o.status = 'active'`)
+  eq(active[0].n, 0, 'nothing active is awaiting review')
+})
+
+test('nobody the site can reach may read pending_submissions', async () => {
+  /*
+   * A view over `orchards` runs with its owner's privileges unless it says
+   * otherwise, so a grant here would hand the public exactly the rows `hidden`
+   * exists to withhold — unreviewed text typed by strangers, on a site that
+   * publishes what it holds.
+   */
+  /*
+   * Asked of the catalogue rather than by running a failing select. A query
+   * that raises inside `asRole` poisons the transaction before its `finally`
+   * can `reset role`, and the error that surfaces is the reset rather than the
+   * refusal the test is about.
+   */
+  for (const role of ['anon', 'authenticated']) {
+    const { rows } = await client.query(
+      `select has_table_privilege($1, 'pending_submissions', 'select') as can`, [role])
+    eq(rows[0].can, false, `${role} can read unreviewed submissions`)
+  }
+})
+
 test('adding an orchard needs an account', async () => {
   await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
   await raises(() => client.query(`select submit_orchard('X', 41.9, -75.9)`), { code: '42501' })

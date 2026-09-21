@@ -52,12 +52,16 @@ than an edit to someone's local scheduler.
 sequenceDiagram
     autonumber
     participant S as Session
+    participant E as export-data.mjs
     participant C as scrape.mjs
     participant Q as scripts/.queue/
     participant R as record-observations.mjs
     participant DB as Database
 
-    S->>C: node scripts/scrape.mjs --limit 25 --queue
+    S->>E: node scripts/export-data.mjs --pending
+    E->>DB: pending_submissions
+    E-->>C: scripts/.pending.json
+    S->>C: node scripts/scrape.mjs --limit 25 --queue --pending
     C->>C: robots.txt, crawl-delay, conditional requests
     C->>DB: observations the deterministic tiers settled
     C->>Q: one file per farm it could not settle
@@ -74,6 +78,46 @@ sequenceDiagram
 Two numbers in there are deliberate: **25 farms crawled** and **at most 15
 files read**. The cap keeps an unattended run bounded, and leftover files are
 simply picked up by the next run.
+
+## Farms that are not on the map yet
+
+The first two steps are newer than the rest and exist for one reason: a
+submitted orchard lands `hidden`, the crawler reads its targets from the
+published file, and so a submission could only be read *after* a moderator
+approved it — when reading it is most of what decides the approval.
+
+`--pending` writes those rows to `scripts/.pending.json`, which is gitignored:
+they are unreviewed rows typed by strangers, and committing them publishes the
+thing `hidden` exists to withhold. They are crawled first, queued whatever the
+regexes found, and their queue files carry `pending_review` so the reader
+answers the wider question — is this a real farm of the kind this map lists —
+rather than only the narrow one about hours.
+
+The routine still does not approve anything. It reads, records and reports;
+publishing a submitted farm is a person's decision.
+
+```mermaid
+flowchart LR
+    SUB["somebody submits a farm"] --> HID["hidden, flagged"]
+    HID --> EXP["export-data.mjs --pending"]
+    EXP --> CRAWL["scrape.mjs --pending"]
+    CRAWL --> READ["a reader, before the decision"]
+    READ --> PERSON["a person approves — or does not"]
+```
+
+### A stranger now chooses a URL this project fetches
+
+That is a real change in exposure and it has its own door,
+`scripts/lib/hosts.mjs`: no IP literals, no `localhost`, `.local` or
+`.internal`, and a hostname that resolves to a private address is refused.
+`PoliteFetcher` checks only that the scheme is http or https, and the nightly
+read runs on a laptop inside a home network where
+`http://192.168.1.1/` means something.
+
+What it does not close is DNS rebinding between the check and the fetch. That
+is written down in the file rather than left to be found later: an attacker
+controlling a domain's DNS can still cause one GET from the crawling machine,
+and reads nothing back — the response lands in a queue file on that machine.
 
 ## The safety boundary
 

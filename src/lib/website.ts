@@ -60,6 +60,20 @@ const OTHER_SCHEME = /^([a-z][a-z0-9+-]*):/i
 const HOSTNAME = /^[^.\s]+(?:\.[^.\s]+)+$/
 
 /**
+ * A machine on somebody's own network, rather than a farm.
+ *
+ * These two rules are the reason this file has a second copy in
+ * `scripts/lib/hosts.mjs`, and the reason that copy is the important one: a
+ * submitted website is a URL a stranger chose and this project's crawler
+ * fetches unattended, from a laptop inside a home network. The crawler decides
+ * what it will visit. This says so in the form as well, because being told
+ * beats being ignored, and `test/website.test.mjs` runs both over the same
+ * cases so they cannot drift.
+ */
+const LOCAL_SUFFIX = /(?:^|\.)(?:localhost|local|internal|home\.arpa|localdomain)$/i
+const IP_LITERAL = /^(?:\d{1,3}(?:\.\d{1,3}){3}|\[.*\])$/
+
+/**
  * Read what was typed, and say what would be stored.
  *
  * Adding a missing scheme is the only change this makes. It is the same class
@@ -107,7 +121,15 @@ export function readWebsite(raw: string | null | undefined): Website {
     return { ok: false, reason: 'That does not look like a web address.' }
   }
 
-  if (!HOSTNAME.test(parsed.hostname)) {
+  const hostname = parsed.hostname.replace(/\.$/, '').toLowerCase()
+
+  if (IP_LITERAL.test(hostname) || hostname.includes(':')) {
+    return { ok: false, reason: 'That is an IP address. A farm has a domain name.' }
+  }
+  if (LOCAL_SUFFIX.test(hostname)) {
+    return { ok: false, reason: 'That address only exists on one machine.' }
+  }
+  if (!HOSTNAME.test(hostname)) {
     return {
       ok: false,
       reason: 'That needs to be a full domain, like abmasfarm.com.',
