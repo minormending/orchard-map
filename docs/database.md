@@ -1,12 +1,12 @@
 # The database
 
-Postgres 15 with PostGIS, on Supabase. **Live**: 13 migrations applied, 28
+Postgres 15 with PostGIS, on Supabase. **Live**: 15 migrations applied, 34
 behaviour tests passing against the real project.
 
 ```bash
 pnpm db:status      # what is applied, what is pending
 pnpm db:migrate     # apply pending
-pnpm test:schema    # 28 behaviour tests, against the live project
+pnpm test:schema    # 34 behaviour tests, against the live project
 pnpm db:verify      # container -> migrations -> seed -> tests, from scratch
 ```
 
@@ -148,6 +148,8 @@ node scripts/configure-auth.mjs --apply
 | `…011_promoted_at` | promotion remembers what it already applied |
 | `…012_promotion_comment` | corrects a wrong explanation in 011, no behaviour change |
 | `…013_cast_failure_falls_through` | a value that will not cast no longer blocks its field |
+| `…014_field_sources` | per-field provenance, and what dropping a source would cost |
+| `…015_submitted_precision` | a submitted pin can say it is a road, and may not say it is exact |
 
 The first two and the fourth are generated from `map-kit` templates by
 `scripts/gen-migration.mjs` and then committed as plain SQL. They are written
@@ -310,7 +312,7 @@ is for identity, not permissions.
 
 ## Testing against the real database
 
-`pnpm test:schema` runs 28 behaviour tests against the actual Supabase project.
+`pnpm test:schema` runs 34 behaviour tests against the actual Supabase project.
 There is no local Postgres for day-to-day work — see the Advanced note at the
 top of this page for what a shim got wrong.
 

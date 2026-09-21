@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useEscape } from '@minormending/map-kit'
 import { supabase, HAS_DB } from '../lib/db'
 import { useAccount } from '../lib/account'
 import { FILTERS } from '../lib/filters'
+import { locate, type Precision } from '../lib/locate'
 import type { Tag } from '../lib/types'
+
+/** How long to wait after the last keystroke before asking the geocoder. */
+const SETTLE_MS = 700
 
 /**
  * Propose an orchard that is not here.
@@ -12,17 +16,34 @@ import type { Tag } from '../lib/types'
  * cannot put a pin on the map — which is the same door an auto-hidden orchard
  * comes back through, so there is one review path rather than two.
  *
- * The position comes from a click on the map rather than a typed address,
- * because several of these farms are down an unnamed track and geocoding their
- * address lands you at the wrong end of the county.
+ * The position used to come only from a click on the map, because several of
+ * these farms are down an unnamed track where geocoding the address lands you
+ * at the wrong end of the county. That is still true of those farms and is why
+ * the map click has not gone anywhere. What it got wrong was making everybody
+ * else pay for it: somebody who knows the address had to find their own roof
+ * on a slippy map to avoid a bad result their address would never have
+ * produced.
+ *
+ * So the address is looked up as it is typed, and the answer is offered rather
+ * than imposed. Two rules keep that from becoming the old failure with extra
+ * steps: a pin placed by hand is never overwritten by a later lookup, and an
+ * address with no house number is submitted as `approximate`, which is what
+ * makes the farm's page tell visitors the pin is the road and not the gate.
  */
 export function AddOrchard({
   at,
+  from,
+  precision,
   onPick,
+  onGeocoded,
   onClose,
 }: {
   at: { lat: number; lng: number } | null
+  /** Where the current pin came from. A hand-placed pin outranks the geocoder. */
+  from: 'map' | 'address' | null
+  precision: Precision
   onPick: () => void
+  onGeocoded: (at: { lat: number; lng: number }, precision: Precision) => void
   onClose: () => void
 }) {
   const account = useAccount()
@@ -33,7 +54,64 @@ export function AddOrchard({
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [problem, setProblem] = useState<string | null>(null)
 
+  const [looking, setLooking] = useState(false)
+  const [found, setFound] = useState<
+    { at: { lat: number; lng: number }; precision: Precision; label: string } | null
+  >(null)
+  const [noAddress, setNoAddress] = useState<string | null>(null)
+
+  /*
+   * `from` is read through a ref rather than listed as a dependency.
+   *
+   * Applying a result sets `from` to 'address' in the parent, so depending on
+   * it here would re-run this effect, look the same address up again, and set
+   * it again — a loop paid for one Photon request at a time. The effect should
+   * run when the visitor changes what they typed, and that is all it lists.
+   */
+  const fromRef = useRef(from)
+  fromRef.current = from
+
   useEscape(onClose)
+
+  useEffect(() => {
+    if (!account) return
+    if (address.trim().length < 4) {
+      setFound(null)
+      setNoAddress(null)
+      setLooking(false)
+      return
+    }
+
+    const ac = new AbortController()
+    const timer = setTimeout(async () => {
+      setLooking(true)
+      try {
+        const result = await locate({ address, town }, { signal: ac.signal })
+        if (ac.signal.aborted) return
+        if (result.ok) {
+          setNoAddress(null)
+          setFound({ at: result.at, precision: result.precision, label: result.label })
+          // A pin the visitor placed themselves is theirs; offer, do not take.
+          if (fromRef.current !== 'map') onGeocoded(result.at, result.precision)
+        } else {
+          setFound(null)
+          setNoAddress(result.reason)
+        }
+      } catch {
+        if (!ac.signal.aborted) {
+          setFound(null)
+          setNoAddress('Address lookup is unavailable just now. Place it on the map.')
+        }
+      } finally {
+        if (!ac.signal.aborted) setLooking(false)
+      }
+    }, SETTLE_MS)
+
+    return () => {
+      clearTimeout(timer)
+      ac.abort()
+    }
+  }, [address, town, account])
 
   if (!HAS_DB) return null
 
@@ -50,6 +128,7 @@ export function AddOrchard({
       p_town: town || null,
       p_state: 'NY',
       p_tags: tags,
+      p_precision: precision,
     })
 
     if (error) {
@@ -100,10 +179,15 @@ export function AddOrchard({
           </label>
           <label className="add-field">
             <span>Address</span>
-            <input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} />
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              maxLength={200}
+              autoComplete="off"
+            />
           </label>
 
-          <p className="add-where">
+          <p className="add-where" aria-live="polite">
             {at ? (
               <>Position set: {at.lat.toFixed(4)}, {at.lng.toFixed(4)}. </>
             ) : (
@@ -112,6 +196,42 @@ export function AddOrchard({
             <button type="button" className="link" onClick={onPick}>
               {at ? 'Pick again on the map' : 'Click the map to place it'}
             </button>
+          </p>
+
+          <p className="add-found" aria-live="polite">
+            {looking && <span className="muted">Looking up the address…</span>}
+
+            {!looking && noAddress && <span className="muted">{noAddress}</span>}
+
+            {!looking && found && from === 'address' && (
+              <span className="muted">From the address: {found.label}.</span>
+            )}
+
+            {/*
+              * The visitor moved the pin themselves and then edited the
+              * address. Both are plausibly right, and neither one of them is
+              * ours to pick, so the lookup says what it found and waits.
+              */}
+            {!looking && found && from === 'map' && (
+              <>
+                <span className="muted">That address is at {found.label}. </span>
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => onGeocoded(found.at, found.precision)}
+                >
+                  Use that instead
+                </button>
+              </>
+            )}
+
+            {!looking && at && precision === 'approximate' && (
+              <span className="add-rough">
+                {' '}That address has no house number, so this pin is the right
+                road rather than the front gate. If you know where the entrance
+                is, place it on the map instead.
+              </span>
+            )}
           </p>
 
           <div className="chips">

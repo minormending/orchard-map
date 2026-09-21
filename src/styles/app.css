@@ -681,6 +681,16 @@ a { color: var(--accent); }
   border-radius: var(--radius);
 }
 .add-where { font-size: 0.8rem; color: var(--ink-2); margin: 0.6rem 0; }
+
+/* What the address lookup found, under the position it set. Empty most of the
+   time, so it carries no margin of its own when it has nothing to say. */
+.add-found { font-size: 0.8rem; line-height: 1.45; margin: 0; }
+.add-found:not(:empty) { margin: 0 0 0.6rem; }
+
+/* An approximate pin is the one thing here a visitor must not skim past: it is
+   the difference between the gate and a road that runs for miles. */
+.add-rough { color: var(--apple); }
+
 .add .chips { margin-bottom: 0.7rem; }
 
 .placing-hint {
