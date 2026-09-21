@@ -2842,6 +2842,24 @@
     "imported_at": "2026-09-17"
   },
   {
+    "id": "db-ae437d85-54dd-4b03-b14f-abd098119fe0",
+    "slug": "jin-s-apple-farm-inc-westbury",
+    "name": "Jin's Apple Farm, Inc.",
+    "lat": 40.756379,
+    "lng": -73.588144,
+    "address": "215 Post Ave",
+    "town": "Westbury",
+    "state": "NY",
+    "zip": "11590",
+    "phone": "(516) 333-7825",
+    "website": null,
+    "tags": [],
+    "import_source": "user",
+    "import_id": "jin-s-apple-farm-inc-westbury",
+    "import_licence": "user-submitted",
+    "imported_at": "2026-09-21"
+  },
+  {
     "id": "ctapples-johnny-appleseed-farm-ellington",
     "slug": "johnny-appleseed-farm-ellington",
     "name": "Johnny Appleseed Farm",
