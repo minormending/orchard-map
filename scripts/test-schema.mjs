@@ -761,6 +761,103 @@ test('the widened policy does not leak a hidden row to anonymous readers', async
   eq(rows[0].n, 0, 'anon can see rows that are not active')
 })
 
+test('the address may not say the town again', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+
+  /*
+   * Abma's Farm Market, exactly as submitted. addressLine() joins address,
+   * town, state and zip, so this would have printed Wyckoff and NJ twice, and
+   * the JSON-LD would have put the whole string in streetAddress beside its
+   * own addressLocality.
+   */
+  for (const addr of [
+    '700 Lawlins Rd, Wyckoff, NJ 07481',
+    '700 Lawlins Rd, Wyckoff NJ 07481',
+    '700 Lawlins Rd, Wyckoff, NJ',
+  ]) {
+    await raises(
+      () => client.query(
+        `select submit_orchard('Twice Said Farm', 41.0163, -74.1862, $1::text, 'Wyckoff', 'NJ')`,
+        [addr]),
+      { code: '22023' })
+  }
+
+  // The state on its own is enough: it has a column too.
+  await raises(
+    () => client.query(
+      `select submit_orchard('State Twice Farm', 41.02, -74.19,
+         '700 Lawlins Rd, Somewhere Else, NJ', 'Franklin Lakes', 'NJ')`),
+    { code: '22023' })
+})
+
+test('a comma in a street line is usually load-bearing', async () => {
+  /*
+   * The reason this refuses rather than trims. Every comma-carrying address
+   * on the map is a suite or building qualifier, and cutting one takes away
+   * the part that finds the door.
+   */
+  const alice = await makeUser('alice')
+  await become(alice)
+  let lat = 41.3
+  for (const addr of [
+    '18 W Main St, Ste #1',
+    '8 Winkler Rd, Building 3',
+    '100 Jericho Tpke, Box 648',
+    '1355 Boston Post Road, US Rte. 1, I-95 Exit 57',
+    '12 Oak Rd, Unit BB',
+  ]) {
+    lat += 0.5
+    const { rows } = await client.query(
+      `select submit_orchard($1::text, $2::float8, -75.5, $3::text, 'Nowhere', 'NY') as r`,
+      [`Farm ${lat}`, lat, addr])
+    eq(rows[0].r.ok, true, `refused "${addr}"`)
+    const { rows: made } = await client.query(
+      'select address from orchards where id = $1', [rows[0].r.id])
+    eq(made[0].address, addr, 'stored as typed — not trimmed to something shorter')
+  }
+})
+
+test('a town with a dot in it is a town, not a pattern', async () => {
+  /*
+   * The town goes into a regex, and towns contain regex. Unescaped, the dot
+   * in "St. Johnsville" matches any character, so "Stx Johnsville" would be
+   * refused as a repeat of a town it is not.
+   */
+  const alice = await makeUser('alice')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Dotted Farm', 42.1, -74.6,
+       '1 Main St, Stx Johnsville', 'St. Johnsville', 'NY') as r`)
+  eq(rows[0].r.ok, true, 'an unescaped dot refused a street it should not have')
+
+  // And the real repeat is still caught.
+  await raises(
+    () => client.query(
+      `select submit_orchard('Dotted Twice', 42.2, -74.7,
+         '1 Main St, St. Johnsville', 'St. Johnsville', 'NY')`),
+    { code: '22023' })
+})
+
+test('the zip has somewhere to go at last', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Zipped Farm', 41.05, -74.2, '700 Lawlins Rd',
+       'Wyckoff', 'NJ', '{}', null, null, '07481') as r`)
+  const { rows: made } = await client.query(
+    'select address, town, state, zip from orchards where id = $1', [rows[0].r.id])
+  eq(made[0].address, '700 Lawlins Rd')
+  eq(made[0].zip, '07481', 'the column existed and nothing could fill it')
+
+  // Five digits, or five and four, or nothing.
+  await raises(
+    () => client.query(
+      `select submit_orchard('Bad Zip', 41.06, -74.21, '1 Lane', 'Nowhere', 'NY',
+         '{}', null, null, 'NJ 07481')`),
+    { code: '22023' })
+})
+
 test('adding an orchard needs an account', async () => {
   await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
   await raises(() => client.query(`select submit_orchard('X', 41.9, -75.9)`), { code: '42501' })

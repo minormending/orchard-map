@@ -6,6 +6,7 @@ import { FILTERS } from '../lib/filters'
 import { locate, type Precision } from '../lib/locate'
 import { STATES } from '../lib/states'
 import { readWebsite } from '../lib/website'
+import { splitAddress, repeatsPlace } from '../lib/address'
 import type { Tag } from '../lib/types'
 
 /** How long to wait after the last keystroke before asking the geocoder. */
@@ -54,6 +55,10 @@ export function AddOrchard({
   const [stateCode, setStateCode] = useState('')
   const [address, setAddress] = useState('')
   const [website, setWebsite] = useState('')
+  /* Only ever set by accepting the split below. There is no zip field to
+     fill in: nobody should have to type it twice, and typing it once is what
+     the address box already was. */
+  const [zip, setZip] = useState('')
   const [tags, setTags] = useState<Tag[]>([])
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [problem, setProblem] = useState<string | null>(null)
@@ -131,8 +136,34 @@ export function AddOrchard({
    */
   const site = readWebsite(website)
 
+  /*
+   * A whole address in the street box, and whether it is saying the town
+   * twice.
+   *
+   * `tail` is what could be moved; `said twice` is the narrower thing the
+   * database refuses. They are separated because only the second is an error:
+   * a tail naming some other town might be part of a street name, and the
+   * form offers to move it without insisting.
+   */
+  const tail = splitAddress(address)
+  /* Compared against the fields that will actually be submitted, which is
+     what the database compares them against. Passing the parsed town here
+     compares it with itself and says "said twice" about every tail. */
+  const saidTwice = repeatsPlace(address, town, stateCode)
+
+  /* Moving it is the visitor's decision, taken in one click. Town and state
+     are only filled when empty — what they typed themselves outranks what was
+     parsed out of another field. */
+  const useSplit = () => {
+    if (!tail) return
+    setAddress(tail.street)
+    if (!town.trim()) setTown(tail.town)
+    if (!stateCode) setStateCode(tail.state)
+    if (tail.zip) setZip(tail.zip)
+  }
+
   const send = async () => {
-    if (!at || !stateCode || name.trim().length < 2 || !site.ok) return
+    if (!at || !stateCode || name.trim().length < 2 || !site.ok || saidTwice) return
     setState('sending')
     setProblem(null)
 
@@ -146,6 +177,7 @@ export function AddOrchard({
       p_tags: tags,
       p_precision: precision,
       p_website: site.url,
+      p_zip: zip || null,
     })
 
     if (error) {
@@ -219,11 +251,44 @@ export function AddOrchard({
             <span>Address</span>
             <input
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => { setAddress(e.target.value); setZip('') }}
               maxLength={200}
+              placeholder="700 Lawlins Rd"
               autoComplete="off"
+              aria-invalid={saidTwice}
             />
           </label>
+
+          {/*
+            * Offered, not done. The tail could be part of a street name and
+            * only the person typing knows — the same bargain the geocoder
+            * makes two fields down.
+            *
+            * When it repeats the town or state being submitted beside it,
+            * that judgment is not open: those have columns of their own, the
+            * farm's page would print them twice, and the database refuses it.
+            * Better to say so here than to send it and report "that did not
+            * go through".
+            */}
+          {tail && (
+            <p className="add-split" aria-live="polite">
+              {saidTwice ? (
+                <span className="add-rough">
+                  The town and state have their own boxes below, so this would
+                  print them twice.{' '}
+                </span>
+              ) : (
+                <span className="muted">That looks like the whole address. </span>
+              )}
+              <button type="button" className="link" onClick={useSplit}>
+                Keep “{tail.street}” here
+              </button>
+              <span className="muted">
+                {' '}and move {tail.town}, {tail.state}
+                {tail.zip ? ` ${tail.zip}` : ''} out.
+              </span>
+            </p>
+          )}
 
           {/*
             * Asked for, because without it the farm is on the map and mute.
@@ -332,7 +397,8 @@ export function AddOrchard({
               type="button"
               className="button"
               disabled={
-                !at || !stateCode || name.trim().length < 2 || !site.ok || state === 'sending'
+                !at || !stateCode || name.trim().length < 2 || !site.ok || saidTwice ||
+                state === 'sending'
               }
               onClick={send}
             >
