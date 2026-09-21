@@ -163,6 +163,55 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPl
     })
 
     /*
+     * The attribution starts expanded, even with `compact: true`.
+     *
+     * MapLibre's `_updateCompact` adds `maplibregl-compact` and
+     * `maplibregl-compact-show` together, and only ever drops the second one
+     * when the map is dragged. On a 375px phone that is a 262px credit bar
+     * across the bottom of a 375px screen, sitting exactly where the list
+     * button is — and since the button has the higher z-index, it painted over
+     * the middle of "© CARTO, © OpenStreetMap contributors". A credit nobody
+     * can read is worse than a compact one, and it is the half of the overlap
+     * that matters legally.
+     *
+     * Collapsed, the badge is 24px in the corner and the centred button clears
+     * it, so this is horizontal separation rather than a stacking fight —
+     * there is no room to stack, with the detail sheet already sitting 4rem up.
+     *
+     * Doing it by class is what MapLibre itself does on drag; there is no
+     * public API for it. `maplibregl-compact` is left in place deliberately:
+     * `_updateCompact` re-adds `compact-show` only when that class is absent,
+     * so leaving it means later style and source events cannot reopen this.
+     */
+    const narrow = window.matchMedia('(max-width: 52rem)')
+    const setCompact = () => {
+      const attrib = holder.current?.querySelector('.maplibregl-ctrl-attrib')
+      if (!attrib?.classList.contains('maplibregl-compact')) return false
+      attrib.classList.toggle('maplibregl-compact-show', !narrow.matches)
+      return true
+    }
+
+    /*
+     * Once, on the way in, and then never again.
+     *
+     * The classes are not written until the attribution text arrives, which is
+     * a source event, so this has to wait for one — but `sourcedata` keeps
+     * firing for the life of the map, every time a tile lands. Left attached,
+     * it would shut the panel a second after somebody tapped it open, which is
+     * a worse bug than the overlap: the map deciding it knows better.
+     */
+    const onceReady = () => {
+      if (!setCompact()) return
+      m.off('sourcedata', onceReady)
+      m.off('styledata', onceReady)
+    }
+    m.on('sourcedata', onceReady)
+    m.on('styledata', onceReady)
+    // A viewport crossing the breakpoint is somebody changing the question, so
+    // that one does get to reset the answer.
+    narrow.addEventListener('change', setCompact)
+
+    /*
      * MapLibre measures its container once and then trusts that measurement.
      * If the container is zero-height at mount — a stylesheet still landing, a
      * parent that has not resolved its grid row yet — the map builds a canvas
@@ -184,6 +233,7 @@ export function OrchardMap({ orchards, selected, onSelect, apiRef, placing, onPl
 
     return () => {
       ro.disconnect()
+      narrow.removeEventListener('change', setCompact)
       originMarker.current?.remove()
       originMarker.current = null
       m.remove()
