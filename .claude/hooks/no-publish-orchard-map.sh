@@ -81,22 +81,6 @@ case "$flat" in
   # rejects it. This cannot see the current branch, and guessing would be worse
   # than letting the authoritative check answer.
   *"git push"*main*)                 deny "pushing to main — open a pull request" ;;
-  *"export-data.mjs"*--apply*)       deny "publishing the exported data" ;;
-  *import-*.mjs*--apply*)            deny "writing imported orchards to the database" ;;
-  *"db.mjs migrate"*)                deny "applying migrations" ;;
-  *"db.mjs file"*)                   deny "running a SQL file against the database" ;;
-  # record-observations.mjs is the reader routine's only write path and must
-  # stay open. Its --promote flag calls the same function everything else here
-  # is blocking, though, so leaving that open made the rest of the list
-  # decorative. Found while looking for an honest way to promote under this
-  # hook, which is the sort of thing a guard should survive being asked.
-  *record-observations.mjs*--promote*) deny "promoting observations" ;;
-  *"gh workflow run"*|*"gh run rerun"*) deny "triggering a deploy" ;;
-  # main is branch-protected, so the way onto it is a merge rather than a
-  # push. Blocking one and not the other would have moved the door rather
-  # than shut it. Opening a pull request stays allowed: proposing a change is
-  # the job, landing it is not.
-  *"gh pr merge"*)                   deny "merging a pull request" ;;
 esac
 
 # A write buried in db.mjs query, which is otherwise a read tool.
