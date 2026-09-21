@@ -450,6 +450,48 @@ test('a submission that says nothing about precision still records nothing', asy
      'null means nobody recorded a precision — it is not a claim of exactness')
 })
 
+test('a state that is not two letters is refused, not trimmed to fit', async () => {
+  const alice = await makeUser('alice')
+  await become(alice)
+
+  /*
+   * `left(trim(p_state), 2)` used to make anything fit. 'Connecticut' became
+   * 'CT' by luck; 'Cornwall' would have become 'CO', which is Colorado. The
+   * damage is not the bad input, it is that the row it produces is shaped
+   * exactly like a good one — the About page groups by this column and the map
+   * prints it, and neither has any way to tell the two apart.
+   */
+  await raises(
+    () => client.query(
+      `select submit_orchard('Spelled Out Farm', 41.4, -75.4, '1 Lane', 'Nowhere', 'Connecticut')`),
+    { code: '22023' })
+
+  // Case is a spelling, not a different state, so it is fixed rather than refused.
+  const { rows } = await client.query(
+    `select submit_orchard('Lowercase Farm', 41.5, -75.5, '1 Lane', 'Nowhere', 'ct') as r`)
+  eq(rows[0].r.ok, true)
+  const { rows: made } = await client.query(
+    'select state from orchards where id = $1', [rows[0].r.id])
+  eq(made[0].state, 'CT')
+})
+
+test('a submission with no state at all is still accepted', async () => {
+  /*
+   * The column is nullable and 252 imported rows use that: null means nobody
+   * said, and the UI renders it as absent. The form requires a state, but the
+   * function must not — refusing null here would make "unknown" unrepresentable
+   * through the one door that is allowed to add rows.
+   */
+  const alice = await makeUser('alice')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Stateless Farm', 41.6, -75.6, '1 Lane', 'Nowhere', null) as r`)
+  eq(rows[0].r.ok, true)
+  const { rows: made } = await client.query(
+    'select state from orchards where id = $1', [rows[0].r.id])
+  eq(made[0].state, null)
+})
+
 test('adding an orchard needs an account', async () => {
   await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
   await raises(() => client.query(`select submit_orchard('X', 41.9, -75.9)`), { code: '42501' })

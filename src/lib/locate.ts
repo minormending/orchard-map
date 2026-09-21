@@ -81,12 +81,18 @@ export const TOWN_CENTRE_M = 60
 /**
  * Bias for the lookup, rather than a state appended to the query.
  *
- * The form has no state field and `submit_orchard` is called with a hardcoded
- * 'NY', which is already wrong for the Connecticut and Pennsylvania farms on
- * this map. Asserting that state to the geocoder as well would turn a wrong
- * label into a wrong pin. Photon takes a `near` instead, which prefers local
- * results without ruling anything out, so a Connecticut address still resolves
- * in Connecticut.
+ * The form now asks which state the farm is in, so this query could assert it.
+ * It still must not. A state in the query is a constraint: Photon answers
+ * within it or not at all, so an address that is ambiguous, mistyped, or sits
+ * a mile over a state line comes back as a confident pin in the wrong place
+ * rather than as no result the visitor can see and correct. The state is also
+ * the one field here nobody has checked yet — it is what the submitter says,
+ * on its way to a moderator, and a query that trusts it turns a label somebody
+ * can fix into a position nobody will question.
+ *
+ * `near` is the honest version of the same idea: it prefers local results
+ * without ruling anything out, so a Connecticut address still resolves in
+ * Connecticut, and a wrong answer still looks wrong.
  */
 const NEAR: [number, number] = [-74.15, 41.65]
 

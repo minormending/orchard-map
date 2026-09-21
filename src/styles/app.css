@@ -670,7 +670,12 @@ a { color: var(--accent); }
 .add h2 { margin: 0 2rem 0.6rem 0; font-size: 1.05rem; }
 .add-field { display: block; margin-bottom: 0.5rem; }
 .add-field span { display: block; font-size: 0.78rem; color: var(--ink-2); margin-bottom: 0.15rem; }
-.add-field input {
+/* The select shares the inputs' box, but keeps the platform's own chevron
+   rather than being flattened to match them — the arrow is the only thing
+   saying it opens. `color-scheme` on :root is what keeps the native control
+   legible in dark mode. */
+.add-field input,
+.add-field select {
   width: 100%;
   font: inherit;
   font-size: 0.85rem;

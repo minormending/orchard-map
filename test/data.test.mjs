@@ -195,3 +195,27 @@ test('a field credited to another source names one we can name', () => {
     }
   }
 })
+
+test('the add form can name every state the map already shows', () => {
+  /*
+   * The form sent a hardcoded 'NY' with every submission until it was given a
+   * list to choose from, and a list is only a fix while it keeps up with the
+   * data. The direction matters: this does NOT require every offered state to
+   * have listings — a state with none is exactly the one whose first farm is
+   * worth hearing about — only that nothing already on the map is unsayable.
+   *
+   * Read as text rather than imported: `src/lib/states.ts` is pulled in by a
+   * .tsx component, and this file is plain node.
+   */
+  const source = readFileSync(new URL('../src/lib/states.ts', import.meta.url), 'utf8')
+  const offered = new Set([...source.matchAll(/code: '([A-Z]{2})'/g)].map((m) => m[1]))
+  assert.ok(offered.size > 0, 'found no states in states.ts — the regex has gone stale')
+
+  for (const o of ORCHARDS) {
+    if (!o.state) continue
+    assert.ok(
+      offered.has(o.state),
+      `${o.name} is in ${o.state}, which the add form cannot offer — add it to src/lib/states.ts`,
+    )
+  }
+})

@@ -4,6 +4,7 @@ import { supabase, HAS_DB } from '../lib/db'
 import { useAccount } from '../lib/account'
 import { FILTERS } from '../lib/filters'
 import { locate, type Precision } from '../lib/locate'
+import { STATES } from '../lib/states'
 import type { Tag } from '../lib/types'
 
 /** How long to wait after the last keystroke before asking the geocoder. */
@@ -49,6 +50,7 @@ export function AddOrchard({
   const account = useAccount()
   const [name, setName] = useState('')
   const [town, setTown] = useState('')
+  const [stateCode, setStateCode] = useState('')
   const [address, setAddress] = useState('')
   const [tags, setTags] = useState<Tag[]>([])
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
@@ -116,7 +118,7 @@ export function AddOrchard({
   if (!HAS_DB) return null
 
   const send = async () => {
-    if (!at || name.trim().length < 2) return
+    if (!at || !stateCode || name.trim().length < 2) return
     setState('sending')
     setProblem(null)
 
@@ -126,7 +128,7 @@ export function AddOrchard({
       p_lng: at.lng,
       p_address: address || null,
       p_town: town || null,
-      p_state: 'NY',
+      p_state: stateCode,
       p_tags: tags,
       p_precision: precision,
     })
@@ -177,6 +179,27 @@ export function AddOrchard({
             <span>Town</span>
             <input value={town} onChange={(e) => setTown(e.target.value)} maxLength={100} />
           </label>
+
+          {/*
+            * Next to the town, because that is the pair the map itself prints
+            * under a farm's name, and nothing is chosen for the visitor.
+            *
+            * A preselected 'NY' would be the old hardcoded value with a
+            * dropdown in front of it: right for most submissions, silently
+            * wrong for the rest, and skipped by exactly the people whose farm
+            * is not in New York. Somebody proposing a farm knows which state
+            * it is in, so being asked costs them one click and ends the guess.
+            */}
+          <label className="add-field">
+            <span>State</span>
+            <select value={stateCode} onChange={(e) => setStateCode(e.target.value)}>
+              <option value="">Choose a state…</option>
+              {STATES.map((s) => (
+                <option key={s.code} value={s.code}>{s.name}</option>
+              ))}
+            </select>
+          </label>
+
           <label className="add-field">
             <span>Address</span>
             <input
@@ -256,7 +279,7 @@ export function AddOrchard({
             <button
               type="button"
               className="button"
-              disabled={!at || name.trim().length < 2 || state === 'sending'}
+              disabled={!at || !stateCode || name.trim().length < 2 || state === 'sending'}
               onClick={send}
             >
               {state === 'sending' ? 'Sending…' : 'Submit for review'}
