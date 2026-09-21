@@ -685,6 +685,11 @@ a { color: var(--accent); }
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
+/* What a typed website will be stored as, or why it will not be. Silent when
+   the box is empty or already holds a full URL, which is most of the time. */
+.add-site { font-size: 0.8rem; line-height: 1.45; margin: 0; }
+.add-site:not(:empty) { margin: -0.15rem 0 0.6rem; }
+
 .add-where { font-size: 0.8rem; color: var(--ink-2); margin: 0.6rem 0; }
 
 /* What the address lookup found, under the position it set. Empty most of the

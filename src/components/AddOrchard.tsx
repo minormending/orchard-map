@@ -5,6 +5,7 @@ import { useAccount } from '../lib/account'
 import { FILTERS } from '../lib/filters'
 import { locate, type Precision } from '../lib/locate'
 import { STATES } from '../lib/states'
+import { readWebsite } from '../lib/website'
 import type { Tag } from '../lib/types'
 
 /** How long to wait after the last keystroke before asking the geocoder. */
@@ -52,6 +53,7 @@ export function AddOrchard({
   const [town, setTown] = useState('')
   const [stateCode, setStateCode] = useState('')
   const [address, setAddress] = useState('')
+  const [website, setWebsite] = useState('')
   const [tags, setTags] = useState<Tag[]>([])
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [problem, setProblem] = useState<string | null>(null)
@@ -117,8 +119,20 @@ export function AddOrchard({
 
   if (!HAS_DB) return null
 
+  /*
+   * Settled on every keystroke rather than on submit, because the only useful
+   * thing to say about a website is what will be stored — and saying it after
+   * the form has closed helps nobody.
+   *
+   * A farm with no website is the ordinary case here and always has been: 85
+   * of the 301 rows on the map have none. So an empty box is an answer, and
+   * the only thing that stops a submission is a box with something unusable
+   * in it.
+   */
+  const site = readWebsite(website)
+
   const send = async () => {
-    if (!at || !stateCode || name.trim().length < 2) return
+    if (!at || !stateCode || name.trim().length < 2 || !site.ok) return
     setState('sending')
     setProblem(null)
 
@@ -131,6 +145,7 @@ export function AddOrchard({
       p_state: stateCode,
       p_tags: tags,
       p_precision: precision,
+      p_website: site.url,
     })
 
     if (error) {
@@ -210,6 +225,43 @@ export function AddOrchard({
             />
           </label>
 
+          {/*
+            * Asked for, because without it the farm is on the map and mute.
+            *
+            * Everything the map knows beyond a name and a pin — hours, whether
+            * picking is on, what is ripe this week — comes from reading the
+            * farm's own site, and the crawler's target list is simply the rows
+            * that have one. A submission with this box empty can be published
+            * and can never say anything else about itself.
+            */}
+          <label className="add-field">
+            <span>Website</span>
+            <input
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              maxLength={500}
+              placeholder="abmasfarm.com"
+              inputMode="url"
+              autoComplete="off"
+              aria-invalid={!site.ok}
+            />
+          </label>
+
+          {/*
+            * What will actually be stored, whenever that is not what was
+            * typed. The scheme is added rather than demanded — nobody writes
+            * one on the side of a barn — but it is added in the open, the way
+            * the geocoder shows the pin it found, so somebody whose site has
+            * no certificate can put `http://` back and be believed.
+            */}
+          <p className="add-site" aria-live="polite">
+            {!site.ok ? (
+              <span className="add-rough">{site.reason}</span>
+            ) : site.url && site.url !== website.trim() ? (
+              <span className="muted">Saved as {site.url}</span>
+            ) : null}
+          </p>
+
           <p className="add-where" aria-live="polite">
             {at ? (
               <>Position set: {at.lat.toFixed(4)}, {at.lng.toFixed(4)}. </>
@@ -279,7 +331,9 @@ export function AddOrchard({
             <button
               type="button"
               className="button"
-              disabled={!at || !stateCode || name.trim().length < 2 || state === 'sending'}
+              disabled={
+                !at || !stateCode || name.trim().length < 2 || !site.ok || state === 'sending'
+              }
               onClick={send}
             >
               {state === 'sending' ? 'Sending…' : 'Submit for review'}
