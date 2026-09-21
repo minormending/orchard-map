@@ -15,6 +15,17 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # deploy-pages has documented this as required since v4, which fetches the
+  # artifact by ID through the Actions API rather than being handed it. Deploys
+  # have succeeded without it the whole time — so this is closing a gap between
+  # what the workflow asks for and what the action says it needs, not fixing a
+  # break. Worth doing because the failure it prevents would arrive on some
+  # future runner change with no commit of ours to blame it on.
+  #
+  # Declaring the block at all is what made this possible to get wrong: a
+  # workflow with no `permissions:` gets the repository default, and naming
+  # three scopes silently revokes every scope not named.
+  actions: read
 
 # Let a running deploy finish; queue at most one more.
 concurrency:
