@@ -21,8 +21,17 @@ export type Tag =
 export type OrchardStatus = 'active' | 'hidden' | 'removed'
 
 export interface Orchard {
-  id: string
-  /** Stable, human-readable, and the URL. Collisions get the import id appended. */
+  /**
+   * The key, and deliberately the only one.
+   *
+   * Stable, human-readable, and the URL. Collisions get the import id appended.
+   *
+   * The exported JSON also carries an `id` — `nyaa-4893`, `db-<uuid>` — which
+   * is an artifact of the export and never the row's primary key. It is left
+   * off this type on purpose: while it was on it, the three write RPCs sent it
+   * as `p_orchard_id` and every write from the site failed to cast. Anything
+   * that names a farm to the database names it by slug. See migration 020.
+   */
   slug: string
   name: string
   lat: number

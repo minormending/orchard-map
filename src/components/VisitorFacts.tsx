@@ -46,17 +46,23 @@ export function VisitorFacts({ orchard }: { orchard: Orchard }) {
   const answer = async (field: FieldKey, value: boolean) => {
     setBusy(field)
     const { data, error } = await supabase!.rpc('submit_visitor_claim', {
-      p_orchard_id: orchard.id,
+      // The slug, because it is the only key this page has: the bundle is built
+      // from a JSON file whose `id` is an export artifact, not the row's
+      // primary key. See migration 020.
+      p_orchard_slug: orchard.slug,
       p_field: field,
       p_value: value,
     })
     setBusy(null)
 
     if (error) {
+      // Error codes are the contract with the database; the English is not.
       setNote(
         error.code === '53400'
           ? 'That is a lot of answers — try again later.'
-          : 'That did not go through.',
+          : error.code === 'P0002'
+            ? 'This farm is no longer on the map.'
+            : 'That did not go through.',
       )
       return
     }

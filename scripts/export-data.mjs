@@ -129,6 +129,9 @@ const byslug = new Map(previous.map((o) => [o.slug, o]))
 const exported = rows.map((r) => {
   const prior = byslug.get(r.slug)
   return {
+    /* Not the row's primary key, and not a key at all: kept stable across
+       exports so diffs stay readable. Anything that has to name a farm to the
+       database — a report, a claim, a flag — names it by slug. */
     id: prior?.id ?? `db-${r.id}`,
     slug: r.slug,
     name: r.name,
