@@ -59,6 +59,26 @@ export const SOURCES: Source[] = [
       'Requires attribution and share-alike. The only rows here whose terms ' +
       'are not a guess.',
   },
+  {
+    /*
+     * A person looked these up and typed them in, rather than a directory
+     * publishing them. That is a weaker provenance than the others in one
+     * specific way — there is no page to go back to and re-read — and a
+     * stronger one in another, since nobody compiles a list by hand of farms
+     * they have not heard of.
+     *
+     * It is named honestly for that reason. "Listed by a person, by hand" tells
+     * a visitor what kind of claim it is; crediting it to a directory that
+     * never carried it would not.
+     */
+    key: 'user',
+    name: 'a person, by hand',
+    licence: 'user-submitted',
+    note:
+      'Compiled by somebody rather than taken from a directory, so there is no ' +
+      'published roster to re-check it against. What each farm actually does ' +
+      'still comes from reading the farm’s own website.',
+  },
 ]
 
 export const SOURCE_BY_KEY = new Map(SOURCES.map((s) => [s.key, s]))
