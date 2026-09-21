@@ -124,8 +124,8 @@ a { color: var(--accent); }
 .site-foot p { margin: 0.3rem 0; max-width: 62ch; }
 .site-foot .foot-short a { margin-left: 0.5rem; }
 
-/* On the map page the footer competes with the map for height, so it shrinks
-   to one line. The tile credits are already in MapLibre's own control. */
+/* The footer is one line everywhere now, so this only trims the padding and
+   type on the map page, where every pixel it takes is a pixel of map. */
 .site-foot-compact {
   padding: 0.4rem 1rem;
   font-size: 0.75rem;
@@ -431,6 +431,20 @@ a { color: var(--accent); }
     cursor: pointer;
   }
 
+  /*
+   * And when somebody taps the badge open, the credit wins the overlap.
+   *
+   * The expanded box is wider than the gap beside the button, so the two do
+   * cross; the button's z-index meant the button won, which put the pill over
+   * the middle of the attribution text. Raising the whole bottom-right stack
+   * rather than the control itself, because `.maplibregl-ctrl-bottom-right` is
+   * positioned with a z-index of its own and so a value on the child inside it
+   * would never be compared against the button at all. The stack keeps
+   * MapLibre's `pointer-events: none`, so only the box itself takes taps and
+   * the rest of the button stays pressable.
+   */
+  .maplibregl-ctrl-bottom-right { z-index: 25; }
+
   .sheet { left: 0.5rem; right: 0.5rem; bottom: 4rem; width: auto; }
   .site-head { flex-wrap: wrap; }
   .site-head .tagline { flex-basis: 100%; }
@@ -455,11 +469,11 @@ a { color: var(--accent); }
   .site-head .tagline { display: none; }
   .site-head nav { gap: 0.75rem; font-size: 0.8rem; }
 
-  .site-foot .foot-long { display: none; }
   .site-foot-compact { padding: 0.3rem 0.75rem; font-size: 0.7rem; }
   .site-foot { padding: 0.5rem 0.75rem 0.7rem; }
-  /* One row at 375px. The link label shortens with it — "Where this comes
-     from" is the nicer phrase and it cost a whole extra line. */
+  /* One row at 375px, which is the whole point of the line: the warning and
+     one link fit, a second link does not. */
+  .site-foot .foot-repo { display: none; }
   .site-foot .foot-short { line-height: 1.35; }
 }
 

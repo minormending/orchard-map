@@ -47,22 +47,25 @@ const href = canonical ?? new URL(Astro.url.pathname, Astro.site).href
 
       {wide ? <slot /> : <main class="page"><slot /></main>}
 
+      {/*
+        One line, because the second one was saying what three other places
+        already say better. The tile credits — CARTO, OpenStreetMap — are in
+        MapLibre's own attribution control on the map page, which is the only
+        page whose tiles need crediting. The listing provenance is on About
+        under Licences, per source and with counts, and on each farm's own page
+        as the row it actually applies to; a footer summary of "most stating no
+        licence" was a fourth, vaguer copy that no source could check itself
+        against. What survives is the part that is nowhere else: ring ahead.
+      */}
       <footer class:list={["site-foot", wide && "site-foot-compact"]}>
-        {/*
-          The short line is the one that survives on a phone, so it carries the
-          part that matters: ring ahead. It also had to change — the old copy
-          said listings came from the New York association and that hours were
-          "not checked yet", and both stopped being true once Connecticut,
-          Pennsylvania and the scraper arrived.
-        */}
         <p class="foot-short">
           Not every farm's hours are checked — <strong>ring ahead</strong>.
+          {/* Short labels because the line has to survive a 375px phone in one
+              row; "Where this comes from" is the nicer phrase and does not. The
+              repo link drops out at that width too — it is on About, and a
+              phone is not where anybody opens it. */}
           <a href={`${base}about`}>About</a>
-        </p>
-        <p class="foot-long">
-          Listings from state apple directories and <a href="https://www.openstreetmap.org/copyright" rel="noreferrer">OpenStreetMap</a>,
-          most stating no licence. Tiles by <a href="https://carto.com/attributions" rel="noreferrer">CARTO</a> ·
-          <a href="https://github.com/minormending/orchard-map" rel="noreferrer">source</a>
+          <a class="foot-repo" href="https://github.com/minormending/orchard-map" rel="noreferrer">Source</a>
         </p>
       </footer>
     </div>
