@@ -5,11 +5,15 @@ import { OrchardDetail } from './OrchardDetail'
 import { Legend } from './Legend'
 import { SeasonBanner } from './SeasonBanner'
 import { AuthButton } from './AuthButton'
+import { AccountMenu } from './AccountMenu'
 import { AddOrchard } from './AddOrchard'
 import type { Precision } from '../lib/locate'
 import { HAS_DB } from '../lib/db'
 import { FILTERS, EMPTY_FILTERS, applyFilters, distanceM, milesLabel, tagLabels, type FilterState } from '../lib/filters'
 import { TRAVEL_BANDS, travelTimes, withinBand, durationLabel, drivingLabel, type Origin, type TravelTimes } from '../lib/travel'
+import { useAccount } from '../lib/account'
+import { useMySubmissions } from '../lib/submissions'
+import { readStart } from '../lib/start'
 import type { Orchard, Tag } from '../lib/types'
 
 interface Props {
@@ -51,8 +55,36 @@ export function MapExplorer({ orchards, base }: Props) {
    * value would turn a travel-planning control into a way to claim you are
    * standing in an orchard you have never been to.
    */
-  const [origin, setOrigin] = useState<Origin | null>(null)
+  /*
+   * A saved start is applied as the initial value rather than in an effect, so
+   * the first render already has it and nothing flashes "Travelling from?" at
+   * somebody who answered that question a fortnight ago. It is read from this
+   * browser only — see lib/start.ts for why it is not on the account.
+   */
+  const [origin, setOrigin] = useState<Origin | null>(() => readStart())
   const [pickingOrigin, setPickingOrigin] = useState(false)
+
+  const account = useAccount()
+  const { rows: submissions, state: submissionsState } = useMySubmissions(account)
+  const [mineOnly, setMineOnly] = useState(false)
+
+  /*
+   * Only the published ones can be shown: the map is built from
+   * src/data/orchards.json, which is the export filtered to active rows, so a
+   * submission still waiting on a person is not in it to filter to. The menu
+   * says as much next to the tick box rather than leaving somebody to wonder
+   * where their other farm went.
+   */
+  const mineSlugs = useMemo(
+    () => new Set(submissions.filter((x) => x.status === 'active').map((x) => x.slug)),
+    [submissions],
+  )
+
+  // A filter that cannot match anything is worse than no filter, so it turns
+  // itself off when the thing it filters to goes away — signing out, mostly.
+  useEffect(() => {
+    if (mineOnly && mineSlugs.size === 0) setMineOnly(false)
+  }, [mineOnly, mineSlugs])
   const [times, setTimes] = useState<TravelTimes | null>(null)
   const [travel, setTravel] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle')
   const [band, setBand] = useState<number | null>(null)
@@ -82,6 +114,9 @@ export function MapExplorer({ orchards, base }: Props) {
   const visible = useMemo(() => {
     const matched = applyFilters(orchards, filters)
       .filter((o) => withinBand(o, times, band))
+      // Narrows alongside the tag filters rather than replacing them, which is
+      // the same rule the chips follow: ticking more shows fewer.
+      .filter((o) => !mineOnly || mineSlugs.has(o.slug))
 
     // By road when we know it, as the crow flies otherwise. `here` is only a
     // fallback ordering when the visitor has not named an origin.
@@ -93,7 +128,7 @@ export function MapExplorer({ orchards, base }: Props) {
     }
     if (!from) return matched
     return [...matched].sort((a, b) => distanceM(from, a) - distanceM(from, b))
-  }, [orchards, filters, here, origin, times, band])
+  }, [orchards, filters, here, origin, times, band, mineOnly, mineSlugs])
 
   const chosen = useMemo(
     () => orchards.find((o) => o.slug === selected) ?? null,
@@ -312,7 +347,20 @@ export function MapExplorer({ orchards, base }: Props) {
 
         {HAS_DB && (
           <div className="panel-foot">
-            <AuthButton />
+            {account ? (
+              <AccountMenu
+                account={account}
+                base={base}
+                submissions={submissions}
+                loading={submissionsState}
+                origin={origin}
+                onOrigin={(at) => { setOrigin(at); setPickingOrigin(false) }}
+                mineOnly={mineOnly}
+                onMineOnly={setMineOnly}
+              />
+            ) : (
+              <AuthButton />
+            )}
             <button type="button" className="link" onClick={() => { setAdding(true); setPlacing(true) }}>
               Add a missing orchard
             </button>

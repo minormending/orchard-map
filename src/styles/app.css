@@ -610,6 +610,115 @@ a { color: var(--accent); }
   flex: none;
 }
 
+/* The signed-in corner. `position: relative` is what the menu hangs off, and
+   the panel foot is the bottom of a scrolling column, so the menu opens
+   UPWARDS — `bottom: 100%` rather than `top`. */
+.account { position: relative; }
+
+.account-button {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.25rem;
+  margin: -0.25rem;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+}
+.account-button:hover { background: var(--bg); }
+
+.account-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex: none;
+  object-fit: cover;
+  /* A photo that has not loaded yet should not be a hole in the layout. */
+  background: var(--line);
+}
+/* The fallback when there is no photo, or it 404s. */
+.account-initial {
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.account-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.2rem 0;
+  z-index: 9;
+  /* Somebody with a lot of submissions should still be able to reach sign
+     out, and on a short phone the whole thing has to fit above the foot. */
+  max-height: min(60vh, 24rem);
+  overflow-y: auto;
+}
+
+.account-block { padding: 0.6rem 0.75rem; }
+.account-block + .account-block { border-top: 1px solid var(--line); }
+.account-block h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+
+.account-subs { list-style: none; margin: 0 0 0.5rem; padding: 0; display: grid; gap: 0.35rem; }
+.account-subs li { line-height: 1.35; }
+.account-status {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+/* Published is the only one that gets a colour. The other two are states a
+   person may not be pleased about, and dressing them up would be worse than
+   saying them plainly. */
+.account-active { color: var(--apple); border-color: currentColor; }
+
+.account-check { display: flex; gap: 0.4rem; align-items: baseline; cursor: pointer; }
+.account-check input { margin: 0; flex: none; }
+
+.account-saved { display: flex; align-items: center; gap: 0.35rem; margin: 0 0 0.45rem; }
+
+.account-address { display: flex; gap: 0.35rem; }
+.account-address input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.5rem;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.account-address .button { flex: none; padding: 0.35rem 0.7rem; font-size: 0.82rem; }
+
+/* What the geocoder found, before anybody agreed to it. Given room to wrap:
+   the long form of a label is what makes a wrong answer obvious. */
+.account-found { margin: 0.45rem 0 0; font-size: 0.8rem; line-height: 1.45; }
+
 .auth { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
 .auth-who { font-weight: 500; }
 .auth-error { color: var(--apple); font-size: 0.78rem; margin: 0.3rem 0 0; }

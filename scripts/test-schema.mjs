@@ -717,6 +717,50 @@ test('nobody the site can reach may read pending_submissions', async () => {
   }
 })
 
+test('you may read the farm you proposed, and nobody else may', async () => {
+  const alice = await makeUser('alice')
+  const bob = await makeUser('bob')
+  await become(alice)
+  const { rows } = await client.query(
+    `select submit_orchard('Proposed By Alice', 41.95, -75.95, '1 Lane', 'Nowhere', 'NY') as r`)
+  const id = rows[0].r.id
+
+  /*
+   * The submission form promises "it goes to a person before it appears on
+   * the map". Until migration 021 the one person with a stake in that row was
+   * the one person who could not see it, so "waiting" and "thrown away" looked
+   * identical from the outside.
+   */
+  const visible = async (who) => {
+    await become(who)
+    const { rows: r } = await asRole('authenticated', () =>
+      client.query('select count(*)::int as n from orchards where id = $1', [id]))
+    return r[0].n === 1
+  }
+
+  eq(await visible(alice), true, 'alice proposed it and cannot see it')
+  eq(await visible(bob), false, 'bob can see a hidden row that is not his')
+})
+
+test('the widened policy does not leak a hidden row to anonymous readers', async () => {
+  /*
+   * `auth.uid()` is null for anon, and `created_by = null` is NULL rather than
+   * true, so the anonymous read is unchanged. Worth a test rather than a
+   * comment: the same rule written as `is not distinct from` would hand every
+   * anonymous visitor every imported row in the table, all of which have a
+   * null created_by.
+   */
+  const alice = await makeUser('alice')
+  await become(alice)
+  await client.query(
+    `select submit_orchard('Proposed And Hidden', 41.96, -75.96, '1 Lane', 'Nowhere', 'NY')`)
+
+  await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
+  const { rows } = await asRole('anon', () =>
+    client.query(`select count(*)::int as n from orchards where status <> 'active'`))
+  eq(rows[0].n, 0, 'anon can see rows that are not active')
+})
+
 test('adding an orchard needs an account', async () => {
   await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
   await raises(() => client.query(`select submit_orchard('X', 41.9, -75.9)`), { code: '42501' })
