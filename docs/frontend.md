@@ -14,16 +14,16 @@ from the committed `src/data/orchards.json`.
 
 ```mermaid
 flowchart TD
-    JSON["src/data/orchards.json<br/>301 orchards"] --> ASTRO["astro build"]
+    JSON["src/data/orchards.json<br/>302 orchards"] --> ASTRO["astro build"]
     ASTRO --> INDEX["index.html<br/>the map"]
-    ASTRO --> PAGES["301 orchard pages"]
+    ASTRO --> PAGES["302 orchard pages"]
     ASTRO --> CAL["varieties, about"]
     PAGES --> SITEMAP["sitemap.xml"]
 ```
 
 "apple picking warwick ny" is the query that matters, and a single-page app
 cannot rank for it — there is one URL and its markup is a loading state. The
-301 orchard pages are the crawlable surface; the map is the tool people use
+302 orchard pages are the crawlable surface; the map is the tool people use
 once they have arrived.
 
 That is also why there is no database call at request time. A page that renders
@@ -98,7 +98,7 @@ time with a filter at 45 / 60 / 90 / 120 minutes.
 
 ```mermaid
 flowchart TD
-    SET["Visitor sets an origin<br/>geolocation, or a click on the map"] --> REQ["One OSRM table request<br/>1 source, 301 destinations"]
+    SET["Visitor sets an origin<br/>geolocation, or a click on the map"] --> REQ["One OSRM table request<br/>1 source, 302 destinations"]
     REQ -->|"about 600ms, 54KB"| TIMES["A duration per orchard"]
     TIMES --> CACHE["Cached in sessionStorage<br/>keyed to ~100m"]
     TIMES --> SORT["List sorts by road time"]
