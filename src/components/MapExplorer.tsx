@@ -6,6 +6,7 @@ import { Legend } from './Legend'
 import { SeasonBanner } from './SeasonBanner'
 import { AuthButton } from './AuthButton'
 import { AddOrchard } from './AddOrchard'
+import type { Precision } from '../lib/locate'
 import { HAS_DB } from '../lib/db'
 import { FILTERS, EMPTY_FILTERS, applyFilters, distanceM, milesLabel, tagLabels, type FilterState } from '../lib/filters'
 import { TRAVEL_BANDS, travelTimes, withinBand, durationLabel, drivingLabel, type Origin, type TravelTimes } from '../lib/travel'
@@ -26,6 +27,18 @@ export function MapExplorer({ orchards, base }: Props) {
   const [adding, setAdding] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [placed, setPlaced] = useState<Position>(null)
+
+  /*
+   * Where the pin came from, and what it is entitled to claim.
+   *
+   * These travel with `placed` rather than inside `AddOrchard` because the map
+   * click that sets a pin by hand happens out here, on the map. The form needs
+   * to know a pin was hand-placed so a later address lookup offers itself
+   * instead of overwriting it, and needs the precision so the submission can
+   * say the pin is a road rather than a gate.
+   */
+  const [placedFrom, setPlacedFrom] = useState<'map' | 'address' | null>(null)
+  const [placedPrecision, setPlacedPrecision] = useState<Precision>(null)
   const mapApi = useRef<MapApi | null>(null)
 
   /*
@@ -325,6 +338,10 @@ export function MapExplorer({ orchards, base }: Props) {
               return
             }
             setPlaced(at)
+            setPlacedFrom('map')
+            // A click is somebody pointing at a farm, not a source stating a
+            // coordinate, so it records no precision at all.
+            setPlacedPrecision(null)
             setPlacing(false)
           }}
         />
@@ -342,8 +359,25 @@ export function MapExplorer({ orchards, base }: Props) {
         {adding && (
           <AddOrchard
             at={placed}
+            from={placedFrom}
+            precision={placedPrecision}
             onPick={() => setPlacing(true)}
-            onClose={() => { setAdding(false); setPlacing(false) }}
+            onGeocoded={(at, precision) => {
+              setPlaced(at)
+              setPlacedFrom('address')
+              setPlacedPrecision(precision)
+              // Show them the pin they just earned, so a wrong one is obvious
+              // while the form is still open rather than after a moderator
+              // has read it.
+              mapApi.current?.flyTo(at.lng, at.lat)
+            }}
+            onClose={() => {
+              setAdding(false)
+              setPlacing(false)
+              setPlaced(null)
+              setPlacedFrom(null)
+              setPlacedPrecision(null)
+            }}
           />
         )}
         {chosen && (
