@@ -376,11 +376,8 @@ a { color: var(--accent); }
 .caveat strong { color: var(--ink); }
 
 /* The hollow dot in the legend, matching the map's approximate pins. */
-.legend-dot-hollow {
-  background: transparent !important;
-  border: 2.5px solid var(--ink-2);
-  box-sizing: border-box;
-}
+/* The hollow legend swatch lives with `.legend-dot`, further down — it has to
+   come after it in source order to override anything. */
 
 .crumbs { font-size: 0.85rem; margin: 0 0 1rem; }
 
@@ -760,6 +757,30 @@ a { color: var(--accent); }
   /* The same white ring the map draws, so a swatch looks like a pin rather
      than like a colour sample. */
   box-shadow: 0 0 0 1.5px #fff, 0 0 0 2px rgb(0 0 0 / 12%);
+}
+
+/*
+ * The hollow swatch, for the note about approximate pins.
+ *
+ * It sits inside `.legend-note`, a <p>, rather than in `.legend li`, which is
+ * the flex row everything else uses. A <span> in a paragraph is `display:
+ * inline`, where width and height do nothing at all — so it collapsed to zero
+ * width and rendered as a thin vertical bar: the border of a box with no box
+ * in it.
+ *
+ * It must also come AFTER `.legend-dot` in this file. The two selectors have
+ * equal specificity, so source order is the whole tie-break; written earlier,
+ * its `box-shadow: none` lost silently and the swatch kept a white halo that
+ * the map does not draw around an approximate dot.
+ */
+.legend-dot-hollow {
+  display: inline-block;
+  vertical-align: -0.12em;
+  background: transparent;
+  border: 2px solid var(--ink-2);
+  box-sizing: border-box;
+  box-shadow: none;
+  margin-right: 0.15rem;
 }
 
 .legend-label { color: var(--ink-2); }
