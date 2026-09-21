@@ -49,23 +49,50 @@ test('the guard is executable', () => {
   assert.ok(statSync(HOOK).mode & 0o111, 'the hook is not executable')
 })
 
-test('it refuses every way of publishing orchard-map', () => {
+test('it refuses the two things it still covers', () => {
   for (const command of [
     `${PUSH} -q origin main`,
     `${PUSH} origin HEAD:main`,
     `cd ${O} && ${PUSH} origin main`,
+    `node scripts/db.mjs query "select ${FN}()"`,
+    'node scripts/db.mjs query "update orchards set phone = null"',
+    'node scripts/db.mjs query "delete from orchards"',
+  ]) {
+    assert.equal(decide(command, O), 'BLOCK', command)
+  }
+})
+
+/*
+ * Narrowed deliberately by Kevin on 2026-09-21, and written down rather than
+ * quietly deleted — an assertion that disappears from a guard's tests is
+ * indistinguishable from one that was never there.
+ *
+ * These are now ALLOWED, and what covers each:
+ *
+ *   git push <branch>              nothing; main is what matters and is covered
+ *   gh pr merge                    nothing. CI must pass, and that is the gate
+ *   export-data.mjs --apply        nothing; the PR diff is where it is reviewed
+ *   import-*.mjs --apply           nothing
+ *   db.mjs migrate / file          nothing
+ *   record-observations --promote  nothing, and it reaches the same function
+ *                                  the db.mjs query rule below still blocks
+ *   gh workflow run                nothing
+ *
+ * The last one is worth a second look if this ever gets revisited: promotion
+ * is blocked through one door and open through another, which is an
+ * inconsistency rather than a decision.
+ */
+test('what was removed is removed, not half-removed', () => {
+  for (const command of [
     'node scripts/export-data.mjs --apply',
     'node scripts/import-ctapples.mjs --apply',
     'node scripts/db.mjs migrate',
     'node scripts/db.mjs file supabase/seed.sql',
-    `node scripts/db.mjs query "select ${FN}()"`,
     `node scripts/record-observations.mjs x.json ${PROMOTE}`,
     'gh workflow ' + 'run deploy.yml',
-    // main is branch-protected, so a merge is the way onto it. Blocking the
-    // push and not the merge would move the door rather than shut it.
     'gh pr ' + 'merge 12 --squash',
   ]) {
-    assert.equal(decide(command, O), 'BLOCK', command)
+    assert.equal(decide(command, O), 'ALLOW', command)
   }
 })
 
