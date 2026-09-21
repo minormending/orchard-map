@@ -15,6 +15,7 @@
  * schema says.
  */
 import pg from 'pg'
+import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dbConfig } from '@minormending/map-kit/node/connect'
@@ -217,7 +218,7 @@ test('a client cannot reach the rate limiter or learn its salt', async () => {
 test('submit_report writes a report and keeps no position', async () => {
   const o = await anOrchard()
   const { rows } = await client.query(
-    `select submit_report($1, 'open', 'anon-1', 41.5, -74.0) as r`, [o.id])
+    `select submit_report($1, 'open', 'anon-1', 41.5, -74.0) as r`, [o.slug])
   eq(rows[0].r.ok, true)
 
   const { rows: saved } = await client.query(
@@ -233,28 +234,85 @@ test('geo_verified is true only near the farm', async () => {
     `select st_y(geog::geometry) as lat, st_x(geog::geometry) as lng from orchards where id = $1`, [o.id])
 
   const near = await client.query(
-    `select submit_report($1,'open','a',$2,$3) as r`, [o.id, here[0].lat, here[0].lng])
+    `select submit_report($1,'open','a',$2,$3) as r`, [o.slug, here[0].lat, here[0].lng])
   eq(near.rows[0].r.geo_verified, true, 'a report from the farm should verify')
 
   const far = await client.query(
-    `select submit_report($1,'open','b',$2,$3) as r`, [o.id, here[0].lat + 1, here[0].lng])
+    `select submit_report($1,'open','b',$2,$3) as r`, [o.slug, here[0].lat + 1, here[0].lng])
   eq(far.rows[0].r.geo_verified, false, 'a report 111km away should not')
 })
 
 test('an unknown report kind is refused, not coerced', async () => {
   const o = await anOrchard()
-  await raises(() => client.query(`select submit_report($1, 'banana')`, [o.id]),
+  await raises(() => client.query(`select submit_report($1, 'banana')`, [o.slug]),
     { code: '22023' })
+})
+
+/*
+ * The one thing neither suite was checking: that the key the FILE ships is the
+ * key the functions take.
+ *
+ * Every write function used to take the orchard's uuid, and no browser has
+ * ever held one — the pages are built from src/data/orchards.json, whose `id`
+ * is an export artifact, so a claim about dogs arrived as
+ * `invalid input syntax for type uuid: "db-bc9b70df-…"`. It was every write
+ * from the site, for two weeks, and both suites passed throughout because each
+ * read an id out of the database immediately before sending it back.
+ *
+ * So these take their key from the shipped file instead. A test that supplies
+ * its own key proves the function works; only one that uses the published key
+ * proves the site can reach it.
+ */
+const SHIPPED = JSON.parse(
+  readFileSync(join(ROOT, 'src/data/orchards.json'), 'utf8'))
+
+test('the published file and the table agree on a key', async () => {
+  const { rows } = await client.query(
+    `select count(*)::int as n from orchards
+      where status = 'active' and slug = any($1::text[])`,
+    [SHIPPED.map((o) => o.slug)])
+  ok(rows[0].n > 0,
+    `no published slug exists in the table — the file is from another database`)
+})
+
+test('a report can be filed with the key the site publishes', async () => {
+  const { rows: live } = await client.query(
+    `select slug from orchards
+      where status = 'active' and slug = any($1::text[]) order by slug limit 1`,
+    [SHIPPED.map((o) => o.slug)])
+  const { rows } = await client.query(
+    `select submit_report($1, 'open', 'shipped-key') as r`, [live[0].slug])
+  eq(rows[0].r.ok, true, 'the site cannot file a report with the only key it has')
+})
+
+test('a slug the table does not have is refused, not coerced', async () => {
+  await raises(() => client.query(`select submit_report('no-such-farm', 'open')`),
+    { code: 'P0002' })
+  await raises(() => client.query(`select submit_orchard_flag('no-such-farm', 'x')`),
+    { code: 'P0002' })
+})
+
+test('a flag from a page lands against the farm its slug names', async () => {
+  const o = await anOrchard()
+  const { rows } = await client.query(
+    `select submit_orchard_flag($1, 'the gate is on the other road') as r`, [o.slug])
+  eq(rows[0].r.ok, true)
+
+  const { rows: queued } = await client.query(
+    `select count(*)::int as n from flags
+      where target_type = 'orchard' and target_id = $1
+        and message = 'the gate is on the other road'`, [o.id])
+  eq(queued[0].n, 1, 'the flag must reach the queue against the right orchard')
 })
 
 test('trouble counts double and everything decays', async () => {
   const o = await anOrchard()
-  await client.query(`select submit_report($1,'open','a')`, [o.id])
+  await client.query(`select submit_report($1,'open','a')`, [o.slug])
   const { rows: up } = await client.query(
     'select score from orchard_confidence where orchard_id = $1', [o.id])
   ok(Number(up[0].score) > 0.9, `one confirm should score ~1, got ${up[0].score}`)
 
-  await client.query(`select submit_report($1,'closed','b')`, [o.id])
+  await client.query(`select submit_report($1,'closed','b')`, [o.slug])
   const { rows: down } = await client.query(
     'select score from orchard_confidence where orchard_id = $1', [o.id])
   // +1 and -2 leaves about -1: trouble weighs double.
@@ -268,20 +326,20 @@ test('auto-hide needs four distinct people, and only "gone" counts', async () =>
   // the farm most of the way there either: closed is a fact about a day, not
   // about whether the farm exists.
   for (let i = 0; i < 6; i++) {
-    await client.query(`select submit_report($1,'closed',$2)`, [o.id, `closed-${i}`])
+    await client.query(`select submit_report($1,'closed',$2)`, [o.slug, `closed-${i}`])
   }
   let { rows } = await client.query('select status from orchards where id = $1', [o.id])
   eq(rows[0].status, 'active', 'closed reports must never hide an orchard')
 
   // Three people saying gone is still not enough.
   for (let i = 0; i < 3; i++) {
-    await client.query(`select submit_report($1,'gone',$2)`, [o.id, `gone-${i}`])
+    await client.query(`select submit_report($1,'gone',$2)`, [o.slug, `gone-${i}`])
   }
   ;({ rows } = await client.query('select status from orchards where id = $1', [o.id]))
   eq(rows[0].status, 'active', 'three reporters must not be enough')
 
   // The fourth tips it.
-  await client.query(`select submit_report($1,'gone','gone-3')`, [o.id])
+  await client.query(`select submit_report($1,'gone','gone-3')`, [o.slug])
   ;({ rows } = await client.query('select status from orchards where id = $1', [o.id]))
   eq(rows[0].status, 'hidden', 'four distinct reporters should hide it')
 
@@ -294,7 +352,7 @@ test('auto-hide needs four distinct people, and only "gone" counts', async () =>
 test('one person with a grudge cannot hide an orchard', async () => {
   const o = await anOrchard()
   for (let i = 0; i < 10; i++) {
-    await client.query(`select submit_report($1,'gone','same-person')`, [o.id])
+    await client.query(`select submit_report($1,'gone','same-person')`, [o.slug])
   }
   const { rows } = await client.query('select status from orchards where id = $1', [o.id])
   eq(rows[0].status, 'active', 'ten reports from one anon_id must not hide it')
@@ -309,7 +367,7 @@ test('one person is an account, not a fact', async () => {
   const alice = await makeUser('alice')
   await become(alice)
   const { rows } = await client.query(
-    `select submit_visitor_claim($1,'cider_donuts',true) as r`, [o.id])
+    `select submit_visitor_claim($1,'cider_donuts',true) as r`, [o.slug])
   eq(rows[0].r.ok, true)
 
   const { rows: after } = await client.query(
@@ -323,9 +381,9 @@ test('two people who agree settle it', async () => {
   const bob = await makeUser('bob')
 
   await become(alice)
-  await client.query(`select submit_visitor_claim($1,'dogs',true)`, [o.id])
+  await client.query(`select submit_visitor_claim($1,'dogs',true)`, [o.slug])
   await become(bob)
-  await client.query(`select submit_visitor_claim($1,'dogs',true)`, [o.id])
+  await client.query(`select submit_visitor_claim($1,'dogs',true)`, [o.slug])
 
   const { rows } = await client.query('select dogs from orchards where id = $1', [o.id])
   eq(rows[0].dogs, true, 'two agreeing claims should settle the field')
@@ -338,12 +396,12 @@ test('two people who disagree settle nothing', async () => {
   const c = await makeUser('c')
   const d = await makeUser('d')
 
-  await become(a); await client.query(`select submit_visitor_claim($1,'hayride',true)`, [o.id])
-  await become(b); await client.query(`select submit_visitor_claim($1,'hayride',true)`, [o.id])
+  await become(a); await client.query(`select submit_visitor_claim($1,'hayride',true)`, [o.slug])
+  await become(b); await client.query(`select submit_visitor_claim($1,'hayride',true)`, [o.slug])
   // Now two on the other side: two values each reaching two people is a
   // disagreement, and v_winners = 1 is what makes it settle nothing.
-  await become(c); await client.query(`select submit_visitor_claim($1,'hayride',false)`, [o.id])
-  await become(d); await client.query(`select submit_visitor_claim($1,'hayride',false)`, [o.id])
+  await become(c); await client.query(`select submit_visitor_claim($1,'hayride',false)`, [o.slug])
+  await become(d); await client.query(`select submit_visitor_claim($1,'hayride',false)`, [o.slug])
 
   const { rows } = await client.query('select hayride from orchards where id = $1', [o.id])
   // The first pair settles it; the second pair must not overwrite a settled
@@ -355,8 +413,8 @@ test('the same person cannot vote twice', async () => {
   const o = await anOrchard()
   const alice = await makeUser('alice')
   await become(alice)
-  await client.query(`select submit_visitor_claim($1,'corn_maze',true)`, [o.id])
-  await client.query(`select submit_visitor_claim($1,'corn_maze',true)`, [o.id])
+  await client.query(`select submit_visitor_claim($1,'corn_maze',true)`, [o.slug])
+  await client.query(`select submit_visitor_claim($1,'corn_maze',true)`, [o.slug])
 
   const { rows } = await client.query(
     `select count(*)::int as n from visitor_claims where orchard_id = $1 and field = 'corn_maze'`,
@@ -370,7 +428,7 @@ test('the same person cannot vote twice', async () => {
 test('claiming needs an account', async () => {
   const o = await anOrchard()
   await client.query(`select set_config('request.jwt.claim.sub', '', true)`)
-  await raises(() => client.query(`select submit_visitor_claim($1,'dogs',true)`, [o.id]),
+  await raises(() => client.query(`select submit_visitor_claim($1,'dogs',true)`, [o.slug]),
     { code: '42501' })
 })
 

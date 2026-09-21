@@ -82,7 +82,9 @@ export async function submitReport(
   }
 
   const { error } = await supabase.rpc('submit_report', {
-    p_orchard_id: orchard.id,
+    // The slug, not the id: see migration 020. `orchard.id` is a field of the
+    // exported JSON and has never been the key the database holds.
+    p_orchard_slug: orchard.slug,
     p_kind: kind,
     p_anon_id: anonId(),
     p_lat: position?.lat ?? null,

@@ -150,6 +150,11 @@ node scripts/configure-auth.mjs --apply
 | `…013_cast_failure_falls_through` | a value that will not cast no longer blocks its field |
 | `…014_field_sources` | per-field provenance, and what dropping a source would cost |
 | `…015_submitted_precision` | a submitted pin can say it is a road, and may not say it is exact |
+| `…016_submitted_state` | a submitted state is a claim, and nothing was checking it |
+| `…017_submitted_website` | a submitted farm had no way to say anything about itself |
+| `…018_pending_submissions` | one definition of "awaiting review", for the three things that need it |
+| `…019_submitted_import_id` | a submitted farm arrived with no handle to withdraw it by |
+| `…020_write_by_slug` | the writes took a uuid the site has never had; they take the slug |
 
 The first two and the fourth are generated from `map-kit` templates by
 `scripts/gen-migration.mjs` and then committed as plain SQL. They are written

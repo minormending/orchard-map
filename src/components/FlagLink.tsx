@@ -20,9 +20,11 @@ export function FlagLink({ orchard }: { orchard: Orchard }) {
   const send = async () => {
     if (message.trim().length === 0) return
     setState('sending')
-    const { error } = await supabase!.rpc('submit_flag', {
-      p_target_type: 'orchard',
-      p_target_id: orchard.id,
+    // `submit_orchard_flag` rather than the kit's `submit_flag`: the flags
+    // table wants a uuid, and a static page only ever has the slug. Migration
+    // 020 does the lookup and hands the work back to the kit's one door.
+    const { error } = await supabase!.rpc('submit_orchard_flag', {
+      p_orchard_slug: orchard.slug,
       p_message: message,
       p_contact_email: email || null,
     })

@@ -87,13 +87,30 @@ const ok = (v, m) => { if (!v) throw new Error(m) }
 
 console.log(`against ${URL_}\n`)
 
-let anOrchard = null
+/*
+ * The key a visitor's browser actually holds.
+ *
+ * Taken from the file the bundle is built from, NOT from a row this script
+ * fetched a moment ago. Reading it back out of the API is exactly how every
+ * write from the site failed unnoticed: the functions took a uuid, a static
+ * page only ever has the slug its JSON carries, and this check obligingly
+ * supplied the uuid the pages could not.
+ */
+const SHIPPED = JSON.parse(
+  readFileSync(join(ROOT, 'src/data/orchards.json'), 'utf8'))[0]
 
 await check('anon can read orchards over HTTP', async () => {
-  const res = await rest('/orchards?select=id,slug,name,tags&limit=3')
+  const res = await rest('/orchards?select=slug,name,tags&limit=3')
   ok(res.ok, `got ${res.status}: ${res.text}`)
   ok(res.json.length === 3, `expected 3 rows, got ${res.json?.length}`)
-  anOrchard = res.json[0]
+})
+
+await check('the table has the farm the site publishes', async () => {
+  // A published slug that the table does not have means the file was exported
+  // from somewhere else, and every write the site attempts will be a P0002.
+  const res = await rest(`/orchards?select=slug&slug=eq.${encodeURIComponent(SHIPPED.slug)}`)
+  ok(res.ok, `got ${res.status}: ${res.text}`)
+  ok(res.json.length === 1, `the table has no row for published slug "${SHIPPED.slug}"`)
 })
 
 await check('anon can read the variety calendar', async () => {
@@ -128,7 +145,7 @@ await check('submit_report is reachable by its argument names', async () => {
   const res = await rest('/rpc/submit_report', {
     method: 'POST',
     body: JSON.stringify({
-      p_orchard_id: anOrchard.id,
+      p_orchard_slug: SHIPPED.slug,
       p_kind: 'open',
       p_anon_id: `api-check-${Date.now()}`,
       p_lat: null,
@@ -143,14 +160,14 @@ await check('submit_report is reachable by its argument names', async () => {
 await check('submit_report refuses a kind it does not know', async () => {
   const res = await rest('/rpc/submit_report', {
     method: 'POST',
-    body: JSON.stringify({ p_orchard_id: anOrchard.id, p_kind: 'banana' }),
+    body: JSON.stringify({ p_orchard_slug: SHIPPED.slug, p_kind: 'banana' }),
   })
   ok(!res.ok, 'an unknown kind was accepted')
 })
 
-await check('submit_flag and submit_feedback are reachable', async () => {
+await check('submit_orchard_flag and submit_feedback are reachable', async () => {
   for (const [fn, body] of [
-    ['submit_flag', { p_target_type: 'orchard', p_target_id: anOrchard.id, p_message: 'api reachability check' }],
+    ['submit_orchard_flag', { p_orchard_slug: SHIPPED.slug, p_message: 'api reachability check' }],
     ['submit_feedback', { p_kind: 'bug', p_message: 'api reachability check', p_build: 'test' }],
   ]) {
     const res = await rest(`/rpc/${fn}`, { method: 'POST', body: JSON.stringify(body) })
