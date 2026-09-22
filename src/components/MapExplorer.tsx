@@ -293,42 +293,56 @@ export function MapExplorer({ orchards, base }: Props) {
             )}
           </div>
 
+          {/*
+            The label is shown rather than only announced. Both groups already
+            had an aria-label, so a screen reader was told which pills were
+            which and nobody looking at them was — ten identical chips in three
+            ragged rows, where the first four narrow by distance and the rest
+            by what the farm does. `aria-labelledby` points the group at the
+            same words now on the screen, so the two readings cannot drift.
+          */}
           {travel === 'ready' && (
-            <div className="chips" role="group" aria-label="Driving time">
-              {TRAVEL_BANDS.map((b) => {
-                const on = band === b
+            <div className="chip-group">
+              <span className="chip-group-label" id="filter-drive">Drive time</span>
+              <div className="chips" role="group" aria-labelledby="filter-drive">
+                {TRAVEL_BANDS.map((b) => {
+                  const on = band === b
+                  return (
+                    <button
+                      key={b}
+                      type="button"
+                      className={`chip ${on ? 'chip-on' : ''}`}
+                      aria-pressed={on}
+                      title={`Orchards about ${b} minutes' drive or less, without traffic`}
+                      onClick={() => setBand(on ? null : b)}
+                    >
+                      ≤ {b < 60 ? `${b} min` : `${b / 60}h`}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="chip-group">
+            <span className="chip-group-label" id="filter-does">What they do</span>
+            <div className="chips" role="group" aria-labelledby="filter-does">
+              {FILTERS.map((f) => {
+                const on = filters.tags.includes(f.key)
                 return (
                   <button
-                    key={b}
+                    key={f.key}
                     type="button"
                     className={`chip ${on ? 'chip-on' : ''}`}
                     aria-pressed={on}
-                    title={`Orchards about ${b} minutes' drive or less, without traffic`}
-                    onClick={() => setBand(on ? null : b)}
+                    title={f.hint}
+                    onClick={() => toggle(f.key)}
                   >
-                    ≤ {b < 60 ? `${b} min` : `${b / 60}h`}
+                    {f.label}
                   </button>
                 )
               })}
             </div>
-          )}
-
-          <div className="chips" role="group" aria-label="Filters">
-            {FILTERS.map((f) => {
-              const on = filters.tags.includes(f.key)
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  className={`chip ${on ? 'chip-on' : ''}`}
-                  aria-pressed={on}
-                  title={f.hint}
-                  onClick={() => toggle(f.key)}
-                >
-                  {f.label}
-                </button>
-              )
-            })}
           </div>
 
           {/*

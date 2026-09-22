@@ -80,6 +80,21 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --shadow: 0 1px 2px rgb(42 36 29 / 8%), 0 8px 24px rgb(42 36 29 / 8%);
+
+  /*
+   * Two more steps, because there was one.
+   *
+   * Everything structural — the header, the panel, every card, the season
+   * banner — was separated from its neighbour by a 1px line and nothing else,
+   * so the whole interface sat on a single plane and `--shadow` was reserved
+   * for the three things that literally float over the map. `--lift` is for a
+   * surface that is merely *above* the page rather than hovering over it, and
+   * `--shadow-lg` is what the sheet and the key now take, since they are the
+   * furthest forward anything gets.
+   */
+  --lift: 0 1px 2px rgb(42 36 29 / 5%), 0 1px 1px rgb(42 36 29 / 4%);
+  --shadow-lg: 0 2px 4px rgb(42 36 29 / 6%), 0 14px 32px rgb(42 36 29 / 12%);
+
   --panel-w: 23rem;
 
   /*
@@ -91,6 +106,15 @@
    * quickly; the point is to show that a thing changed, not to perform. Every
    * use is switched off under prefers-reduced-motion at the end of the file.
    */
+  /*
+   * Inter carries the interface and Fraunces the headings. Declared here so
+   * the fallbacks travel with them: the faces load with `swap`, so these are
+   * what a reader sees for the first moment and on any connection that never
+   * delivers them.
+   */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Fraunces Variable', Iowan Old Style, Palatino, Georgia, serif;
+
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --fast: 120ms;
   --slow: 220ms;
@@ -120,6 +144,11 @@
     --cider: #e0a05c;
     --leaf: #7bab7f;
     --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 35%);
+    /* Shadow does less work on a dark background — the light theme's values
+       read as smudges here — so these lean harder and the borders keep doing
+       most of the separating. */
+    --lift: 0 1px 2px rgb(0 0 0 / 30%);
+    --shadow-lg: 0 2px 6px rgb(0 0 0 / 45%), 0 16px 36px rgb(0 0 0 / 40%);
     color-scheme: dark;
   }
 }
@@ -131,11 +160,33 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 16px/1.5 var(--font-sans);
   -webkit-text-size-adjust: 100%;
+  /*
+   * Both faces carry every weight from 100 to 900, so there is never a reason
+   * to let the browser smear a bold out of a regular — and a synthesised bold
+   * is exactly what would appear for the half-second before the file lands.
+   */
+  font-synthesis-weight: none;
 }
 
 a { color: var(--accent); }
+
+/*
+ * The editorial layer: the brand and the things that announce a section.
+ *
+ * Deliberately not the dense layer. Card names, chips, table cells and the
+ * panel's labels stay on Inter, because Fraunces at 12px in a list of 302
+ * farms would be decoration standing where information goes.
+ */
+.site-head .site-title,
+.page h1,
+.page h2,
+.page h3,
+.sheet h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; margin: -1px;
@@ -181,6 +232,11 @@ a { color: var(--accent); }
   border-bottom: 1px solid var(--line);
   background: var(--surface);
   flex: none;
+  /* On the map page this bar sits directly on top of the panel and the map,
+     and a hairline was the only thing saying so. */
+  box-shadow: var(--lift);
+  position: relative;
+  z-index: 6;
 }
 
 /* Was `.site-head h1`. Same weight and size — a <p> carrying the brand needs
@@ -219,7 +275,16 @@ a { color: var(--accent); }
   display: inline-flex;
   align-items: center;
   min-height: 2rem;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color var(--fast) var(--ease);
 }
+
+/* Underlined on approach rather than always, which is the trade a standing
+   nav can make and a link inside a sentence cannot: there are three of them,
+   they are visibly a navigation bar, and the underline is what tells you the
+   pointer has found one. */
+.site-head nav a:hover { color: var(--ink); text-decoration: underline; }
 
 /*
  * Visible only once focused, and first in the tab order.
@@ -268,6 +333,12 @@ a { color: var(--accent); }
   border-right: 1px solid var(--line);
   background: var(--surface);
   min-height: 0;
+  /* Cast to the right, over the map, so the column reads as sitting on top of
+     it rather than as a region cut out of it. Off on a phone, where the panel
+     slides over the whole map and has no edge to cast from. */
+  box-shadow: 1px 0 3px rgb(42 36 29 / 5%);
+  position: relative;
+  z-index: 2;
 }
 
 .panel-controls {
@@ -279,12 +350,50 @@ a { color: var(--accent); }
 
 .search input {
   width: 100%;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.75rem;
   font: inherit;
+  font-size: var(--text-md);
   color: inherit;
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  transition: border-color var(--fast) var(--ease),
+              box-shadow var(--fast) var(--ease);
+}
+
+/*
+ * The one field on the map page, so it gets to say when it has the caret.
+ *
+ * It does NOT clear the outline. An `outline: none` here would beat the global
+ * :focus-visible rule on specificity and leave a keyboard user with an 18%
+ * tint where they had a 2px ring — and this stylesheet's own argument for that
+ * ring is that half these taps happen outdoors in bright sun, where a subtle
+ * focus ring is no focus ring. So a pointer focus gets the soft ring, and a
+ * keyboard focus gets the soft ring and the outline on top of it.
+ */
+.search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+/*
+ * Two groups of chips sit above the list — how far you will drive, and what
+ * the farm does — and they were six and four identical pills in three ragged
+ * rows. Both already carried a `role="group"` and an `aria-label`, so a screen
+ * reader was told which was which and nobody looking at it was.
+ *
+ * The label is now real text, and the group points at it with
+ * `aria-labelledby`, so the two readings are the same string rather than two
+ * strings that have to be kept in agreement.
+ */
+.chip-group { display: grid; gap: 0.3rem; }
+
+.chip-group-label {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }
 
 .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
@@ -417,14 +526,39 @@ a { color: var(--accent); }
   width: 100%;
   text-align: left;
   font: inherit;
-  padding: 0.7rem 0.85rem;
+  padding: 0.75rem 0.85rem;
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--line);
+  position: relative;
   cursor: pointer;
   color: inherit;
   transition: background-color var(--fast) var(--ease);
 }
+
+/*
+ * The divider, inset from both ends.
+ *
+ * 302 of these stack into one column, and a rule running wall to wall on every
+ * one of them reads as ledger paper; the gap at each end is what turns a ruled
+ * sheet back into a list.
+ *
+ * A pseudo-element rather than a border or a background layer, because both
+ * `.card:hover` and `.card-on` set `background` as a shorthand and would wipe
+ * a gradient drawn underneath them — a divider that vanishes under the pointer
+ * is a worse bug than the one this is fixing.
+ */
+.card::after {
+  content: '';
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+/* Nothing follows the last one, so its rule is a line under the list. */
+.list li:last-child .card::after { display: none; }
 
 .card:hover { background: color-mix(in oklab, var(--accent) 5%, var(--surface-2)); }
 .card-on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
@@ -449,15 +583,20 @@ a { color: var(--accent); }
   width: min(24rem, calc(100% - 2rem));
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 0.95rem 1.05rem 1.05rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 1rem 1.1rem 1.1rem;
   z-index: 5;
   max-height: calc(100% - 2rem);
   overflow-y: auto;
 }
 
-.sheet h2 { margin: 0 2rem 0.2rem 0; font-size: var(--text-lg); }
+.sheet h2 {
+  margin: 0 2rem 0.25rem 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-snug);
+}
 .sheet-where { margin: 0 0 0.6rem; font-size: var(--text-md); color: var(--ink-2); }
 .sheet-where em { font-style: normal; }
 
@@ -554,9 +693,12 @@ a { color: var(--accent); }
 /* --- orchard page -------------------------------------------------------- */
 
 .page {
-  max-width: 42rem;
+  /* 44rem rather than 42. The calendar's rows are a 13.5rem label beside a
+     track, and at the old measure the track was the narrower of the two on the
+     page whose entire job is drawing it. */
+  max-width: 44rem;
   margin: 0 auto;
-  padding: var(--space-5) var(--space-4) var(--space-6);
+  padding: var(--space-6) var(--space-4) var(--space-6);
   line-height: var(--leading-normal);
 }
 .page h1 {
@@ -572,24 +714,73 @@ a { color: var(--accent); }
   font-size: var(--text-xl);
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-snug);
-  margin: var(--space-6) 0 var(--space-2);
+  margin: var(--space-6) 0 var(--space-3);
+}
+
+/*
+ * A short rule above each section heading.
+ *
+ * An orchard page is five sections stacked in one column, and making the
+ * heading bigger than the paragraph — which is what the last pass did, and was
+ * right — got them told apart without getting them separated. This is the
+ * cheapest mark that says "a new thing starts here" without a full-width line,
+ * which at five repetitions would stripe the page.
+ *
+ * Decorative, and announced as nothing: a generated ::before carries no text
+ * and no role, so a screen reader still hears the heading it belongs to.
+ */
+.page h2::before {
+  content: '';
+  display: block;
+  width: 1.75rem;
+  height: 2px;
+  margin-bottom: var(--space-3);
+  border-radius: 1px;
+  background: var(--accent);
 }
 
 .facts { border-collapse: collapse; width: 100%; font-size: var(--text-md); }
-.facts th, .facts td { text-align: left; padding: 0.45rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-.facts th { font-weight: 500; color: var(--ink-2); width: 11rem; }
+.facts th, .facts td {
+  text-align: left;
+  /* Was 0.45rem top and bottom, which packed a seven-row table into the height
+     of a paragraph and made every row look like a line of one. */
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+/*
+ * The label column reads as a label: smaller, and tracked out the way a column
+ * head is, rather than as ordinary prose that happens to sit on the left.
+ */
+.facts th {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ink-2);
+  width: 11rem;
+  padding-right: var(--space-4);
+}
+
+/* The last rule in a table sits directly above whatever follows and reads as
+   that thing's own top border. */
+.facts tr:last-child th, .facts tr:last-child td { border-bottom: 0; }
 
 .unknown { color: var(--ink-2); font-style: italic; }
 
 .callout {
   background: var(--surface-2);
   border-left: 3px solid var(--cider);
-  padding: 0.8rem 1rem;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: var(--space-4) var(--space-5);
+  /* Was square on the left, which is the shape you get when the coloured bar
+     is thought of as sitting beside the box rather than as part of it. */
+  border-radius: var(--radius);
   font-size: var(--text-md);
-  margin: 1.2rem 0;
+  margin: var(--space-5) 0;
 }
-.callout p { margin: 0.3rem 0; }
+.callout p { margin: 0.4rem 0; }
+.callout p:first-child { margin-top: 0; }
+.callout p:last-child { margin-bottom: 0; }
 
 /*
  * Said next to the Directions button, because that is the control that acts on
@@ -600,7 +791,7 @@ a { color: var(--accent); }
   background: var(--surface-2);
   border-left: 3px solid var(--ink-2);
   padding: 0.7rem 1rem;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--radius);
   font-size: var(--text-md);
   color: var(--ink-2);
   margin: -0.4rem 0 1.2rem;
@@ -611,7 +802,9 @@ a { color: var(--accent); }
 /* The hollow legend swatch lives with `.legend-dot`, further down — it has to
    come after it in source order to override anything. */
 
-.crumbs { font-size: var(--text-md); margin: 0 0 1rem; }
+.crumbs { font-size: var(--text-sm); margin: 0 0 var(--space-4); }
+.crumbs a { color: var(--ink-2); text-decoration: underline; }
+.crumbs a:hover { color: var(--accent); }
 
 .nearby { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
 .nearby a { text-decoration: none; }
@@ -642,6 +835,7 @@ a { color: var(--accent); }
     transform: translateY(100%);
     transition: transform 0.22s ease;
     border-right: 0;
+    box-shadow: none;
   }
 
   .panel-open { transform: translateY(0); }
@@ -1145,14 +1339,31 @@ a { color: var(--accent); }
   font: inherit;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: var(--text-2xs);
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--ink-2);
   cursor: pointer;
+  transition: color var(--fast) var(--ease),
+              border-color var(--fast) var(--ease);
 }
 
-.build-tag:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+/*
+ * Quieter until you want it. It was a bordered, filled pill sitting in the
+ * header beside the site's own name — the most prominent corner of the page
+ * spent on a build number, which is a thing you go looking for when something
+ * is wrong and never otherwise.
+ *
+ * It gives up the box, not the ink. Dropping this to 70% opacity was the
+ * obvious way to do it and takes --ink-2 from 5.96 against the header to about
+ * 3.2, under the 4.5 an 11px label needs; losing the fill and the border costs
+ * nothing at all. The 2rem target is untouched.
+ */
+.build-tag:hover:not(:disabled),
+.build-tag:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 .build-tag:disabled { cursor: default; opacity: var(--disabled); }
 
 /* --- the key ------------------------------------------------------------- */
@@ -1169,9 +1380,9 @@ a { color: var(--accent); }
   z-index: 4;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 0.5rem 0.65rem 0.55rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.6rem 0.7rem 0.65rem;
   font-size: var(--text-sm);
   max-width: 13rem;
 }
@@ -1253,8 +1464,8 @@ a { color: var(--accent); }
   padding: 0.3rem 0.7rem;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-lg);
   color: var(--ink-2);
   cursor: pointer;
 }

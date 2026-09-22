@@ -1,0 +1,39 @@
+/*
+ * Two typefaces, latin only.
+ *
+ * The whole site was `ui-sans-serif, system-ui` — one font declaration for
+ * everything, which on a Mac renders as the system UI face and is why the
+ * pages read like a settings pane rather than something anybody designed.
+ *
+ * Inter for the interface, because this is a dense screen: the panel runs on
+ * 11 to 13px labels and Inter's tall x-height is what keeps those legible at
+ * the sizes the map's density demands. Fraunces for headings and the brand —
+ * warm and a little agricultural without being twee about it, which is the
+ * line this stylesheet has held since its first line.
+ *
+ * Only the latin ranges are declared. Fontsource ships eight more subsets per
+ * family; a browser would never fetch them, but they would sit in the deployed
+ * artifact forever, so they are simply not referenced. A reader downloads two
+ * files, 84K together.
+ *
+ * `swap` rather than `block`: this is a map you use outdoors on a phone, and
+ * text you can read in a fallback beats no text at all while a font arrives.
+ */
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
