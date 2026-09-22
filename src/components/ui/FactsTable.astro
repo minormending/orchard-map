@@ -1,0 +1,11 @@
+---
+/**
+ * The two-column fact table used on all three content pages.
+ *
+ * Thin on purpose. The `<tbody>` is the whole reason it exists: three pages
+ * hand-wrote the same table/tbody/tr nesting, and a `<tr>` that loses its
+ * `<tbody>` gets one invented by the parser in a place the stylesheet does not
+ * expect.
+ */
+---
+<table class="facts"><tbody><slot /></tbody></table>

@@ -1,0 +1,91 @@
+---
+import { calendarBar, windowLabel, type VarietyRow } from '../../lib/season'
+
+/**
+ * The picking calendar, wherever it is drawn.
+ *
+ * This markup existed three times — once on the Calendar page and twice on
+ * every orchard page — and the copies had already drifted apart. The "now"
+ * badge and the ", usually ripe now" the label carries for a screen reader
+ * were added to one of the three; the other two render the same red bars and
+ * say nothing about them. That is the bug this component exists to make
+ * impossible, not a tidiness exercise: the two bar colours sit at a contrast
+ * of 1.86 against each other, so "cannot tell the red from the tan" is a
+ * description of ordinary sighted reading, and the word beside the name is
+ * what actually carries the fact.
+ *
+ * The month axis lives in here too. It is a second grid that has to track the
+ * rows' column widths exactly or the labels stop sitting above the part of the
+ * track they name, and a contract between two rules in a stylesheet is one
+ * nobody can see. Now there is one component and the rules are adjacent.
+ */
+interface Props {
+  varieties: VarietyRow[]
+  /** Fixed at build time by the orchard pages, so the bars and the prose
+      around them cannot disagree about what day it is. */
+  date?: Date
+  /** Show the Aug–Nov axis above the rows. */
+  scale?: boolean
+  /** Tighter margins, for a calendar sitting inside a prose column. */
+  inline?: boolean
+  /**
+   * Set when the caller has already narrowed to what is ripe. The badge and
+   * the label suffix mark a subset; on a list that is *entirely* that subset
+   * they would land on every row and mark nothing, and the heading above such
+   * a list has already said it in words.
+   */
+  allRipe?: boolean
+}
+
+const { varieties, date, scale = false, inline = false, allRipe = false } = Astro.props
+
+/* A variety with no recorded window has no bar to draw and an empty track says
+   nothing, so it is dropped rather than rendered blank. Both callers already
+   pass windowed varieties only — `ripeNow` cannot return one without a window
+   — so this drops nothing today and keeps the component honest if that ever
+   changes. */
+const rows = varieties
+  .map((v) => ({ v, bar: calendarBar(v, date) }))
+  .filter((r): r is { v: VarietyRow; bar: NonNullable<typeof r.bar> } => r.bar !== null)
+---
+{scale && (
+  <div class="cal-scale">
+    <span></span>
+    <span class="cal-months">
+      <span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span>
+    </span>
+  </div>
+)}
+
+<div class:list={['cal', inline && 'cal-inline']}>
+  {rows.map(({ v, bar }) => {
+    const label = windowLabel(v)
+    const ripe = bar.ripeToday && !allRipe
+    return (
+      <div class="cal-row">
+        <span class="cal-name">
+          {v.name}
+          {/* Said in words next to the name, so the distinction survives
+              without colour vision and without a screen reader. */}
+          {ripe && <span class="cal-now">now</span>}
+          <small>{label}</small>
+        </span>
+        {/*
+          The label repeats whether it is ripe, because the bar only says so by
+          turning red. A reader who cannot see the colour — or cannot see the
+          bar — would otherwise get the window and nothing else.
+        */}
+        <span
+          class="cal-track"
+          role="img"
+          aria-label={`${v.name}: ${label}${ripe ? ', usually ripe now' : ''}`}
+        >
+          <span
+            class:list={['cal-bar', bar.ripeToday && 'cal-bar-now']}
+            style={`left:${bar.left}%;width:${bar.width}%`}
+          />
+        </span>
+      </div>
+    )
+  })}
+</div>

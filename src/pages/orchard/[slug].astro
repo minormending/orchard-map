@@ -1,8 +1,12 @@
 ---
 import Base from '../../layouts/Base.astro'
+import Calendar from '../../components/ui/Calendar.astro'
+import Callout from '../../components/ui/Callout.astro'
+import FactsTable from '../../components/ui/FactsTable.astro'
+import Unknown from '../../components/ui/Unknown.astro'
 import { ORCHARDS, addressLine, directionsUrl, telUrl } from '../../lib/orchards'
 import { distanceM, milesLabel, tagLabels } from '../../lib/filters'
-import { ripeNow, windowLabel, calendarBar } from '../../lib/season'
+import { ripeNow } from '../../lib/season'
 import { VARIETY_BY_SLUG } from '../../lib/season'
 import { checkedState, pickingLine, hasFarmData, HOURS_FRESHNESS } from '../../lib/checked'
 import { creditFor, fieldCredits } from '../../lib/sources'
@@ -153,7 +157,7 @@ const jsonLd = {
   {tags.length > 0 ? (
     <ul class="tags">{tags.map((t) => <li class="tag">{t}</li>)}</ul>
   ) : (
-    <p class="unknown">{credit.name} lists them without a category.</p>
+    <Unknown as="p">{credit.name} lists them without a category.</Unknown>
   )}
 
   <h2>What is usually ripe now</h2>
@@ -177,27 +181,7 @@ const jsonLd = {
           same fact as a bar is a picture you can read at a glance, and it is
           already drawn on the Calendar page for the whole region.
         */}
-        <div class="cal cal-inline">
-          {ripeHere.map((v) => {
-            const bar = calendarBar(v!, built)
-            return (
-              <div class="cal-row">
-                <span class="cal-name">
-                  {v!.name}
-                  <small>{windowLabel(v!)}</small>
-                </span>
-                <span class="cal-track" role="img" aria-label={`${v!.name}: ${windowLabel(v!)}`}>
-                  {bar && (
-                    <span
-                      class:list={['cal-bar', bar.ripeToday && 'cal-bar-now']}
-                      style={`left:${bar.left}%;width:${bar.width}%`}
-                    />
-                  )}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+        <Calendar varieties={ripeHere} date={built} inline allRipe />
         <p class="muted">
           Their list, our calendar. Seasons move a week or two with the weather and
           this is not a report from the trees —
@@ -217,27 +201,7 @@ const jsonLd = {
         As of {builtLabel}, Hudson Valley orchards are usually picking
         {' '}{ripe.map((v) => v.name).join(', ')}.
       </p>
-      <div class="cal cal-inline">
-        {ripe.map((v) => {
-          const bar = calendarBar(v, built)
-          return (
-            <div class="cal-row">
-              <span class="cal-name">
-                {v.name}
-                <small>{windowLabel(v)}</small>
-              </span>
-              <span class="cal-track" role="img" aria-label={`${v.name}: ${windowLabel(v)}`}>
-                {bar && (
-                  <span
-                    class:list={['cal-bar', bar.ripeToday && 'cal-bar-now']}
-                    style={`left:${bar.left}%;width:${bar.width}%`}
-                  />
-                )}
-              </span>
-            </div>
-          )
-        })}
-      </div>
+      <Calendar varieties={ripe} date={built} inline allRipe />
       <p class="muted">
         Regional timing, <strong>not</strong> a report from this farm — nobody has
         recorded which varieties {orchard.name} grows. <a href={`${base}varieties`}>The
@@ -255,19 +219,19 @@ const jsonLd = {
   {farmData ? (
     <>
       <h2>What the farm says</h2>
-      <div class="callout">
+      <Callout>
         <p>{pickingLine(orchard, built)}</p>
         <p>
           Everything below was read from {orchard.source_url
             ? <a href={orchard.source_url} rel="noreferrer nofollow">their own website</a>
             : 'their own website'}, {checked?.ago}, by a machine. Nobody rang them.
         </p>
-      </div>
+      </Callout>
     </>
   ) : (
     <>
       <h2>What we do not know</h2>
-      <div class="callout">
+      <Callout>
         <p>
           <strong>Nobody has checked this farm's hours, prices, or whether picking is
           open.</strong> Everything above came from a trade-association roster, which says
@@ -278,16 +242,15 @@ const jsonLd = {
           rather than shown as "no". An empty answer is honest; a wrong one costs you a
           two-hour drive.
         </p>
-      </div>
+      </Callout>
     </>
   )}
 
   <h2>Details</h2>
-  <table class="facts">
-    <tbody>
+  <FactsTable>
       <tr>
         <th>Opening hours</th>
-        <td>{orchard.hours ?? <span class="unknown">Not checked</span>}</td>
+        <td>{orchard.hours ?? <Unknown>Not checked</Unknown>}</td>
       </tr>
       <tr>
         {/* "This season", matching what the field actually means. Whether they
@@ -297,19 +260,19 @@ const jsonLd = {
         <td>
           {orchard.upick_open === true ? 'Yes, per the farm'
             : orchard.upick_open === false ? 'No, per the farm'
-            : <span class="unknown">Not checked</span>}
+            : <Unknown>Not checked</Unknown>}
         </td>
       </tr>
       <tr>
         <th>Admission</th>
-        <td>{orchard.admission ?? <span class="unknown">Not checked</span>}</td>
+        <td>{orchard.admission ?? <Unknown>Not checked</Unknown>}</td>
       </tr>
       <tr>
         <th>Reservations</th>
         <td>
           {orchard.reservations_required === true ? 'Required'
             : orchard.reservations_required === false ? 'Not required'
-            : <span class="unknown">Not checked</span>}
+            : <Unknown>Not checked</Unknown>}
         </td>
       </tr>
       <tr>
@@ -317,12 +280,12 @@ const jsonLd = {
         <td>
           {grows.length > 0
             ? grows.map((v) => v!.name).join(', ')
-            : <span class="unknown">Not recorded yet</span>}
+            : <Unknown>Not recorded yet</Unknown>}
         </td>
       </tr>
       <tr>
         <th>Last checked</th>
-        <td>{checked ? checked.ago : <span class="unknown">Never</span>}</td>
+        <td>{checked ? checked.ago : <Unknown>Never</Unknown>}</td>
       </tr>
       <tr>
         <th>Listed by</th>
@@ -343,8 +306,7 @@ const jsonLd = {
           ))}
         </td>
       </tr>
-    </tbody>
-  </table>
+  </FactsTable>
 
   <h2>Nearest others</h2>
   <ul class="nearby">

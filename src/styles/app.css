@@ -815,7 +815,9 @@ a { color: var(--accent); }
 .cal-inline { margin: var(--space-3) 0 var(--space-4); }
 
 /* Must track .cal-row exactly, or the month labels stop sitting above the
-   part of the track they name. */
+   part of the track they name. Both are rendered by ui/Calendar.astro, which
+   is what makes that a contract somebody can see rather than two rules in a
+   stylesheet that happen to share a number. */
 .cal-scale {
   display: grid;
   grid-template-columns: 13.5rem 1fr;
