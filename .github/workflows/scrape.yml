@@ -28,7 +28,8 @@ permissions:
 
 jobs:
   scrape:
-    runs-on: ubuntu-latest
+    # Pinned deliberately; see deploy.yml for why, and change them together.
+    runs-on: ubuntu-26.04
     # A crawl that has not finished in an hour has gone wrong. The budget caps
     # inside the script are the real defence against a runaway bill; this is
     # the belt to their braces.

@@ -34,7 +34,16 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pinned ahead of the migration rather than waiting for it: `ubuntu-latest`
+    # becomes 26.04 between 19 October and 19 November 2026, and a version that
+    # changes under a deploy is a version that breaks it on a day nobody chose.
+    # Moving first means any breakage lands on a commit that explains itself.
+    #
+    # The cost is that this no longer follows `latest`, so the next LTS needs an
+    # edit here. That is the trade: known staleness over a surprise. Worth
+    # returning to `ubuntu-latest` once the migration completes, if floating is
+    # preferred — the label will point at this same image by then.
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -79,7 +88,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
