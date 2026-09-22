@@ -28,6 +28,9 @@ export function MapExplorer({ orchards, base }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [here, setHere] = useState<Position>(null)
   const [listOpen, setListOpen] = useState(false)
+  /** True where the panel slides over the map rather than sitting beside it —
+   *  the same 52rem the stylesheet switches at. */
+  const [narrow, setNarrow] = useState(false)
   const [adding, setAdding] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [placed, setPlaced] = useState<Position>(null)
@@ -85,6 +88,17 @@ export function MapExplorer({ orchards, base }: Props) {
   useEffect(() => {
     if (mineOnly && mineSlugs.size === 0) setMineOnly(false)
   }, [mineOnly, mineSlugs])
+
+  /* Watched rather than sampled, so rotating a phone into landscape does not
+     leave the panel inert while it is sitting there on screen. 52rem is the
+     stylesheet's own breakpoint for the panel sliding instead of docking. */
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 52rem)')
+    const sync = () => setNarrow(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
   const [times, setTimes] = useState<TravelTimes | null>(null)
   const [travel, setTravel] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle')
   const [band, setBand] = useState<number | null>(null)
@@ -195,7 +209,26 @@ export function MapExplorer({ orchards, base }: Props) {
 
   return (
     <div className="explorer">
-      <aside className={`panel ${listOpen ? 'panel-open' : ''}`}>
+      {/*
+        `inert` when the list is slid away on a phone.
+
+        It was hidden with transform alone, which moves pixels and nothing
+        else: visibility stayed visible, and all 100 cards stayed in the tab
+        order, off-screen. So the List button announced aria-expanded="false"
+        while everything it claimed was collapsed could still be tabbed into
+        and read out.
+
+        Inert rather than aria-hidden, because aria-hidden on something
+        focusable is its own fault — a screen reader skips it while the
+        keyboard still lands there. Inert removes both at once.
+
+        Bound to the same `listOpen` the transform uses, so the two cannot
+        drift; and only below the breakpoint where the panel slides, since on a
+        desktop it is always on screen. The media query is read once and
+        watched, rather than sampled at render, so rotating a phone does not
+        leave the list inert while it is visible.
+      */}
+      <aside className={`panel ${listOpen ? 'panel-open' : ''}`} inert={narrow && !listOpen}>
         <SeasonBanner base={base} />
         <div className="panel-controls">
           <label className="search">
@@ -298,7 +331,20 @@ export function MapExplorer({ orchards, base }: Props) {
             })}
           </div>
 
-          <p className="count">
+          {/*
+            A polite live region, because the count was the only thing that
+            answered "did that filter do anything?" and it changed in silence.
+            Ticking "Pick your own" took the list from 302 to 100 and announced
+            nothing beyond the chip's own "pressed".
+
+            `aria-live` sits on the <p>, which is always in the DOM, rather than
+            on the number: a region has to exist before it changes to be
+            watched, so announcing from an element that appears with the news
+            announces nothing. Polite rather than assertive — this is the
+            result of something you just did, not an interruption worth cutting
+            across whatever is being read.
+          */}
+          <p className="count" aria-live="polite">
             <strong>{visible.length}</strong> of {orchards.length}
             {active && (
               <button type="button" className="link" onClick={() => setFilters(EMPTY_FILTERS)}>
