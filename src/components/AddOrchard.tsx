@@ -3,6 +3,7 @@ import { useEscape } from '@minormending/map-kit'
 import { supabase, HAS_DB } from '../lib/db'
 import { useAccount } from '../lib/account'
 import { FILTERS } from '../lib/filters'
+import Button from './ui/Button'
 import { locate, type Precision } from '../lib/locate'
 import { STATES } from '../lib/states'
 import { readWebsite } from '../lib/website'
@@ -393,9 +394,7 @@ export function AddOrchard({
           </div>
 
           <div className="flag-actions">
-            <button
-              type="button"
-              className="button"
+            <Button
               disabled={
                 !at || !stateCode || name.trim().length < 2 || !site.ok || saidTwice ||
                 state === 'sending'
@@ -403,7 +402,7 @@ export function AddOrchard({
               onClick={send}
             >
               {state === 'sending' ? 'Sending…' : 'Submit for review'}
-            </button>
+            </Button>
           </div>
           {problem && <p className="auth-error">{problem}</p>}
         </>

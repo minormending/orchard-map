@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { tagLabels } from '../lib/filters'
+import Button from './ui/Button'
 import { ReportBox } from './ReportBox'
 import { VisitorFacts } from './VisitorFacts'
 import { FlagLink } from './FlagLink'
@@ -113,23 +114,23 @@ export function OrchardDetail({ orchard, base, distance, drive, position, onClos
       )}
 
       <div className="sheet-actions">
-        <a className="button" href={directionsUrl(orchard)} target="_blank" rel="noreferrer">
+        <Button href={directionsUrl(orchard)} target="_blank" rel="noreferrer">
           Directions
-        </a>
+        </Button>
         {orchard.phone && (
-          <a className="button button-quiet" href={telUrl(orchard.phone)}>
+          <Button variant="quiet" href={telUrl(orchard.phone)}>
             {orchard.phone}
-          </a>
+          </Button>
         )}
         {orchard.website && (
-          <a
-            className="button button-quiet"
+          <Button
+            variant="quiet"
             href={orchard.website}
             target="_blank"
             rel="noreferrer nofollow"
           >
             Website
-          </a>
+          </Button>
         )}
       </div>
 

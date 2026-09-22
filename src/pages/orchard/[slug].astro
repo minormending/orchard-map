@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro'
+import Button from '../../components/ui/Button'
 import Calendar from '../../components/ui/Calendar.astro'
 import Callout from '../../components/ui/Callout.astro'
 import FactsTable from '../../components/ui/FactsTable.astro'
@@ -122,14 +123,14 @@ const jsonLd = {
   {where && <p class="where">{where}</p>}
 
   <p>
-    <a class="button" href={directionsUrl(orchard)} target="_blank" rel="noreferrer">Directions</a>
-    {orchard.phone && <a class="button button-quiet" href={telUrl(orchard.phone)}>{orchard.phone}</a>}
+    <Button href={directionsUrl(orchard)} target="_blank" rel="noreferrer">Directions</Button>
+    {orchard.phone && <Button variant="quiet" href={telUrl(orchard.phone)}>{orchard.phone}</Button>}
     {orchard.website && (
-      <a class="button button-quiet" href={orchard.website} target="_blank" rel="noreferrer nofollow">
+      <Button variant="quiet" href={orchard.website} target="_blank" rel="noreferrer nofollow">
         Their website
-      </a>
+      </Button>
     )}
-    <a class="button button-quiet" href={`${base}?at=${orchard.slug}`}>Show on the map</a>
+    <Button variant="quiet" href={`${base}?at=${orchard.slug}`}>Show on the map</Button>
   </p>
 
   {/*

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase, HAS_DB } from '../lib/db'
 import type { Orchard } from '../lib/types'
+import Button from './ui/Button'
 
 /**
  * "Something here is wrong."
@@ -59,14 +60,12 @@ export function FlagLink({ orchard }: { orchard: Orchard }) {
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </label>
       <div className="flag-actions">
-        <button
-          type="button"
-          className="button"
+        <Button
           disabled={state === 'sending' || message.trim().length === 0}
           onClick={send}
         >
           {state === 'sending' ? 'Sending…' : 'Send'}
-        </button>
+        </Button>
         <button type="button" className="link" onClick={() => setOpen(false)}>Cancel</button>
       </div>
       {state === 'error' && <p className="auth-error">That did not go through. Try again shortly.</p>}

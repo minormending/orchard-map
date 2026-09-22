@@ -3,6 +3,7 @@ import { useEscape, type Account } from '@minormending/map-kit'
 import { auth } from '../lib/db'
 import { locate } from '../lib/locate'
 import { readStart, saveStart, clearStart } from '../lib/start'
+import Button from './ui/Button'
 import { submissionState, type Submission, type SubmissionState } from '../lib/submissions'
 import { orchardUrl } from '../lib/orchards'
 import type { Origin } from '../lib/travel'
@@ -233,14 +234,12 @@ export function AccountMenu({
                 autoComplete="off"
                 onKeyDown={(e) => { if (e.key === 'Enter') lookUp() }}
               />
-              <button
-                type="button"
-                className="button"
+              <Button
                 disabled={looking || address.trim().length < 4}
                 onClick={lookUp}
               >
                 {looking ? 'Looking…' : 'Find'}
-              </button>
+              </Button>
             </div>
             {problem && <p className="auth-error">{problem}</p>}
 
