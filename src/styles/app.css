@@ -211,9 +211,19 @@ a { color: var(--accent); }
   background: var(--bg);
   color: var(--ink-2);
   cursor: pointer;
-}
-
-.chip {
+  /*
+   * A thumb target — the same 2rem the build tag takes, for the same reason
+   * it gives: the thing you reach for should not need a second attempt.
+   *
+   * On the chip rather than on the one instance that was short, so that a
+   * chip cannot be made untappable by giving it tighter padding later. Most
+   * chips already stood at 32px through padding alone and do not move; this
+   * is a floor, not a new size.
+   */
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: border-color var(--fast) var(--ease),
               color var(--fast) var(--ease),
               background-color var(--fast) var(--ease);
@@ -882,7 +892,16 @@ a { color: var(--accent); }
   font-size: var(--text-sm);
 }
 .facts-buttons { display: flex; gap: 0.25rem; flex: none; }
-.facts-buttons .chip { font-size: var(--text-xs); padding: 0.15rem 0.5rem; }
+/*
+ * The Yes/No pairs were 34x25 — the smallest controls in the app, and the ones
+ * most likely to be tapped standing in an orchard on a phone. They cleared the
+ * 24x24 floor and nothing else: every other control here is 31-32px, and the
+ * stylesheet already says why that number exists.
+ *
+ * The tighter padding stays, because ten of these sit in a narrow column and
+ * the width is what keeps them on one line. The height comes from `.chip`.
+ */
+.facts-buttons .chip { font-size: var(--text-xs); padding: 0.15rem 0.55rem; }
 .facts-known strong { color: var(--leaf); }
 .facts-thanks { color: var(--leaf); font-style: normal; font-size: var(--text-xs); }
 .facts-note { margin: 0.5rem 0 0; font-size: var(--text-xs); color: var(--ink-2); }
