@@ -307,9 +307,9 @@ a { color: var(--accent); }
   border-bottom: 1px solid var(--line);
   cursor: pointer;
   color: inherit;
+  transition: background-color var(--fast) var(--ease);
 }
 
-.card { transition: background-color var(--fast) var(--ease); }
 .card:hover { background: color-mix(in oklab, var(--accent) 5%, var(--surface-2)); }
 .card-on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
 .card-name { font-weight: 600; }
@@ -658,7 +658,12 @@ a { color: var(--accent); }
 
 .cal-row {
   display: grid;
-  grid-template-columns: 9.5rem 1fr;
+  /* 13.5rem fits "early September to late September", the longest label the
+     calendar produces, on one line. At 9.5rem it wrapped, which made every row
+     twice as tall as the bar it labels — and the orchard pages had already
+     been widened for exactly this, so the two calendars disagreed about their
+     own row height. */
+  grid-template-columns: 13.5rem 1fr;
   gap: 0.6rem;
   align-items: center;
   font-size: var(--text-md);
@@ -686,22 +691,15 @@ a { color: var(--accent); }
 
 .cal-bar-now { background: var(--apple); opacity: 1; }
 
-/* The same rows inside an orchard page's prose column, where the names are
-   shorter and there is no month axis above them to line up with. */
+/* The same rows inside an orchard page's prose column. Only the margins
+   differ — the geometry is shared, which is the point. */
 .cal-inline { margin: var(--space-3) 0 var(--space-4); }
-.cal-inline .cal-row { grid-template-columns: 13.5rem 1fr; }
 
-/* "early September to late September" is the longest label the calendar
-   produces and it wrapped to two lines at 11rem, which made every row twice
-   as tall as the bar it labels. */
-@media (max-width: 34rem) {
-  .cal-inline .cal-row { grid-template-columns: 1fr; gap: var(--space-1); }
-  .cal-inline .cal-name small { display: inline; margin-left: var(--space-1); }
-}
-
+/* Must track .cal-row exactly, or the month labels stop sitting above the
+   part of the track they name. */
 .cal-scale {
   display: grid;
-  grid-template-columns: 9.5rem 1fr;
+  grid-template-columns: 13.5rem 1fr;
   gap: 0.6rem;
   font-size: var(--text-xs);
   color: var(--ink-2);
@@ -709,8 +707,20 @@ a { color: var(--accent); }
 
 .cal-months { display: flex; justify-content: space-between; }
 
+/*
+ * Below 40rem the label will not fit beside the name at any column width — a
+ * 7rem column was tried and simply wrapped it, which is the same two-line row
+ * with less room for the bar.
+ *
+ * So the row stacks instead: name and window on one line, the track full width
+ * beneath them. The month axis stretches to match, and its empty leading cell
+ * goes, or it would reserve a column that no longer exists.
+ */
 @media (max-width: 40rem) {
-  .cal-row, .cal-scale { grid-template-columns: 7rem 1fr; }
+  .cal-row { grid-template-columns: 1fr; gap: var(--space-1); }
+  .cal-name small { display: inline; margin-left: var(--space-1); }
+  .cal-scale { grid-template-columns: 1fr; }
+  .cal-scale > span:first-child { display: none; }
 }
 
 /* --- reporting ----------------------------------------------------------- */
