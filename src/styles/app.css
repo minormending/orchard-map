@@ -94,6 +94,17 @@
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --fast: 120ms;
   --slow: 220ms;
+
+  /*
+   * One value for "inactive". There were two — the chip used 0.6 and the build
+   * tag 0.7, which is not a distinction anybody drew on purpose — and the
+   * button had none at all.
+   *
+   * Contrast is deliberately not chased here. WCAG 1.4.3 exempts inactive
+   * controls, and a disabled button that still measures 4.5 does not look
+   * disabled, which is the whole job.
+   */
+  --disabled: 0.6;
   color-scheme: light;
 }
 
@@ -501,11 +512,25 @@ a { color: var(--accent); }
 
 /* Pill, to match the chips and tags. These buttons sit directly above a row of
    tags on every orchard page and the two shapes were arguing. */
-.button:hover { background: color-mix(in oklab, #000 12%, var(--accent)); }
-.button-quiet:hover {
+.button:hover:not(:disabled) { background: color-mix(in oklab, #000 12%, var(--accent)); }
+.button-quiet:hover:not(:disabled) {
   background: color-mix(in oklab, var(--accent) 8%, var(--bg));
   border-color: var(--accent);
 }
+
+/*
+ * Three buttons carry a disabled state — Send, Find, and Submit for review —
+ * and none of them showed it. A primary button at full strength that does
+ * nothing when you press it reads as broken rather than as waiting for a field
+ * you have not filled in. It went unnoticed because the state lives in React
+ * and the rule would have had to be written in a stylesheet that had never
+ * heard of it; there is one Button now, so there is one place this belongs.
+ *
+ * Opacity alone. The sibling rules below also set `cursor: default`, which on
+ * a <button> is what the cursor already is — and a disabled <a class="button">
+ * is not reachable, since the prop union will not build one.
+ */
+.button:disabled { opacity: var(--disabled); }
 
 .button-quiet {
   background: var(--bg);
@@ -851,7 +876,7 @@ a { color: var(--accent); }
 .report-q { margin: 0 0 0.4rem; font-size: var(--text-md); font-weight: 500; }
 .report-options { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.5rem; }
 .report-options .chip { font-size: var(--text-sm); }
-.report-options .chip:disabled { opacity: 0.6; cursor: default; }
+.report-options .chip:disabled { opacity: var(--disabled); cursor: default; }
 .report-note { margin: 0; font-size: var(--text-xs); color: var(--ink-2); line-height: 1.4; }
 .report-said {
   margin: 0 0 0.8rem;
@@ -1128,7 +1153,7 @@ a { color: var(--accent); }
 }
 
 .build-tag:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
-.build-tag:disabled { cursor: default; opacity: 0.7; }
+.build-tag:disabled { cursor: default; opacity: var(--disabled); }
 
 /* --- the key ------------------------------------------------------------- */
 
