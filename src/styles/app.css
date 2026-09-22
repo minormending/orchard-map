@@ -7,9 +7,31 @@
   --ink-2: #6b6054;
   --line: #e2d7c6;
   --apple: #c2384a;
-  --cider: #c8792a;
+  /*
+   * Darkened from #c8792a, which failed AA as text: 3.16 on --bg and 2.90 on
+   * --surface-2, against the 4.5 it needs. It is text in two places — the
+   * season label and the "drive times unavailable" warning — and the calendar
+   * bar's fill, which at 85% opacity sat at 2.45 against its own track and so
+   * missed the 3.0 that a graphic carrying meaning has to clear.
+   *
+   * This value is the lightest one that passes both: 5.10 on --bg, 4.68 on
+   * --surface-2, 3.58 as a bar against its track. The dark theme is untouched
+   * because it already measures 6.75.
+   */
+  --cider: #9a5a1b;
   --leaf: #4a7c4e;
   --accent: var(--apple);
+  /*
+   * What to write on top of --accent.
+   *
+   * It was #fff in four places, which is right in the light theme and wrong in
+   * the dark one: --apple lightens to #e06a78 there, and white on it measures
+   * 3.23 against the 4.5 it needs. --bg flips with the theme, so this is
+   * near-white on the dark red and near-black on the light pink — 4.97 and
+   * 5.69. Two of the four were the selected filter chip and every primary
+   * button, so the dark theme has been failing on them the whole time.
+   */
+  --on-accent: var(--bg);
   /* One radius scale. Six values were in play — 999px, 10px, 6px, 4px, 50% and
      a split pair — chosen per component rather than from a system. */
   --radius-sm: 6px;
@@ -150,13 +172,24 @@ a { color: var(--accent); }
   flex: none;
 }
 
-.site-head h1 {
+/* Was `.site-head h1`. Same weight and size — a <p> carrying the brand needs
+   the h1's boldness back, since it no longer gets it from the tag. */
+.site-head .site-title {
   font-size: var(--text-lg);
+  font-weight: 700;
   margin: 0;
   letter-spacing: var(--tracking-snug);
 }
 
-.site-head h1 a { color: inherit; text-decoration: none; }
+/* The brand is a link home, which makes it a standing control like the nav
+   items beside it, so it takes the same floor. */
+.site-head .site-title a {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
 
 .site-head nav {
   margin-left: auto;
@@ -164,6 +197,49 @@ a { color: var(--accent); }
   align-items: center;
   gap: 0.9rem;
   font-size: var(--text-md);
+}
+
+/* The nav links were 20px tall. Inline links inside a sentence are exempt from
+   the target-size rule and stay as they are; these are standing controls in a
+   bar, so they take the same 2rem floor as everything else. The header does
+   not grow — its height was already set by its padding plus a ~20px line, and
+   2rem lands inside that. */
+.site-head nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
+
+/*
+ * Visible only once focused, and first in the tab order.
+ *
+ * Positioned rather than merely unhidden, because the header is sticky-ish at
+ * the top of a fixed shell and an in-flow skip link would push it down by its
+ * own height the moment somebody tabbed into the page.
+ */
+.skip {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  text-decoration: none;
+  transition: top var(--fast) var(--ease);
+}
+
+.skip:focus { top: 0.5rem; }
+
+/* The map page's <main>. It stands where the slot used to, so it has to pass
+   the shell's height down to the explorer rather than wrapping it in a box
+   that sizes to content. */
+.site-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 /* --- explorer ------------------------------------------------------------ */
@@ -243,7 +319,7 @@ a { color: var(--accent); }
 .chip-on {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 500;
 }
 
@@ -294,6 +370,25 @@ a { color: var(--accent); }
   color: var(--accent);
   cursor: pointer;
   text-decoration: underline;
+  /* Standing controls — "sort by distance", "Add a missing orchard" — not
+     links inside a sentence, so the 2rem floor applies to them too. The ones
+     that ARE inline in prose opt back out immediately below. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
+
+/*
+ * The exception the rule itself allows for.
+ *
+ * "Travelling from your location or a point on the map?" is one sentence with
+ * two controls inside it. WCAG exempts a target whose size is set by the
+ * line-height of the text around it, for the good reason that padding these to
+ * 2rem would space the sentence out and make it read worse for everybody.
+ */
+.origin-ask .link {
+  display: inline;
+  min-height: 0;
 }
 
 .list {
@@ -397,7 +492,7 @@ a { color: var(--accent); }
   padding: 0.4rem 0.8rem;
   border-radius: var(--radius-pill);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   text-decoration: none;
   border: 1px solid var(--accent);
   transition: background-color var(--fast) var(--ease),
@@ -577,7 +672,7 @@ a { color: var(--accent); }
     padding: 0.35rem 0.75rem;
     gap: 0.5rem;
   }
-  .site-head h1 { font-size: var(--text-base); }
+  .site-head .site-title { font-size: var(--text-base); }
   .site-head nav { gap: 0.75rem; font-size: var(--text-sm); }
 }
 
@@ -700,6 +795,20 @@ a { color: var(--accent); }
 }
 
 .cal-bar-now { background: var(--apple); opacity: 1; }
+
+/* The word that carries what the red used to carry alone. */
+.cal-now {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-sm);
+  background: var(--apple);
+  color: var(--on-accent);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: 0.05em;
+}
 
 /* The same rows inside an orchard page's prose column. Only the margins
    differ — the geometry is shared, which is the point. */
@@ -1093,8 +1202,10 @@ a { color: var(--accent); }
   position: absolute;
   top: 0.1rem;
   right: 0.2rem;
-  width: 1.4rem;
-  height: 1.4rem;
+  /* Was 1.4rem — 22x22, under the 24x24 floor and well under the 2rem this
+     stylesheet asks of every other control. */
+  width: 2rem;
+  height: 2rem;
   font-size: var(--text-base);
   line-height: 1;
   background: none;

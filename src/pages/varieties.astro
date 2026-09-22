@@ -54,9 +54,23 @@ const rows = VARIETIES
       <div class="cal-row">
         <span class="cal-name">
           {v.name}
+          {/* And said in words next to the name, so the distinction survives
+              without colour vision and without a screen reader. */}
+          {bar!.ripeToday && <span class="cal-now">now</span>}
           <small>{windowLabel(v)}</small>
         </span>
-        <span class="cal-track" role="img" aria-label={`${v.name}: ${windowLabel(v)}`}>
+        {/*
+          The label says whether it is ripe, because the bar only says so by
+          turning red. A reader who cannot see the colour — or cannot see the
+          bar — got the window and nothing else, and the two bar colours sit at
+          a contrast of 1.86 against each other, so "cannot see the colour"
+          includes plenty of people looking straight at it.
+        */}
+        <span
+          class="cal-track"
+          role="img"
+          aria-label={`${v.name}: ${windowLabel(v)}${bar!.ripeToday ? ', usually ripe now' : ''}`}
+        >
           <span
             class:list={['cal-bar', bar!.ripeToday && 'cal-bar-now']}
             style={`left:${bar!.left}%;width:${bar!.width}%`}
