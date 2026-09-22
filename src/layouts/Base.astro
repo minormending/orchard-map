@@ -45,9 +45,23 @@ const href = canonical ?? new URL(Astro.url.pathname, Astro.site).href
     <ClientRouter />
   </head>
   <body>
+    {/*
+      The first thing in the tab order, and invisible until it has focus.
+      The map page carries 326 focusable elements — 302 of them list cards —
+      so without this a keyboard reaches the map itself by going through the
+      whole roster first.
+    */}
+    <a class="skip" href="#main">Skip to the content</a>
     <div class:list={["site", wide && "site-fixed"]}>
       <header class="site-head">
-        <h1><a href={base}>Orchard Map</a></h1>
+        {/*
+          A <p>, not an <h1>. It was a heading on every page, so every page but
+          the map had two of them — the site's name and the page's own title —
+          and a reader navigating by heading had to guess which one described
+          what they were on. The brand is a label for the site; the page says
+          what the page is. Styled identically, so nothing moves.
+        */}
+        <p class="site-title"><a href={base}>Orchard Map</a></p>
         <nav>
           <a href={base}>Map</a>
           <a href={`${base}varieties`}>Calendar</a>
@@ -56,7 +70,14 @@ const href = canonical ?? new URL(Astro.url.pathname, Astro.site).href
         </nav>
       </header>
 
-      {wide ? <slot /> : <main class="page"><slot /></main>}
+      {/*
+        Both branches are <main>. The wide one had none at all: the map page
+        rendered the slot straight into the shell, so the one page that is the
+        whole point of the site was the one with no landmark to jump to.
+      */}
+      {wide
+        ? <main id="main" class="site-main"><slot /></main>
+        : <main id="main" class="page"><slot /></main>}
     </div>
   </body>
 </html>

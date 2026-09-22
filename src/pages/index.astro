@@ -11,6 +11,17 @@ const upick = ORCHARDS.filter((o) => o.tags.includes('pick_your_own')).length
   description={`${ORCHARDS.length} apple orchards, cider mills and farm markets within a day trip of New York City — the Hudson Valley, Catskills, Long Island and over the border into CT, PA and MA. ${upick} offer pick-your-own.`}
   wide
 >
+  {/*
+    The page's heading, carried for readers rather than drawn.
+
+    The brand in the header used to be the h1, which made it this page's
+    heading by accident and every other page's second one. Now that it is a
+    <p>, this page needs its own — and it is hidden because the name is already
+    on screen two inches above, in the header. A visible duplicate would be
+    clutter; no h1 at all leaves a reader arriving by heading with nothing.
+  */}
+  <h1 class="visually-hidden">Orchard Map</h1>
+
   <!--
     client:only rather than client:load. MapLibre reaches for `window` and for
     a WebGL context during module evaluation, so server-rendering this island
