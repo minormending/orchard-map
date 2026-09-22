@@ -113,29 +113,6 @@ a { color: var(--accent); }
   font-size: 0.85rem;
 }
 
-.site-foot {
-  padding: 1rem 1rem 1.5rem;
-  border-top: 1px solid var(--line);
-  color: var(--ink-2);
-  font-size: 0.8rem;
-  background: var(--surface);
-}
-
-.site-foot p { margin: 0.3rem 0; max-width: 62ch; }
-.site-foot .foot-short a { margin-left: 0.5rem; }
-
-/* The footer is one line everywhere now, so this only trims the padding and
-   type on the map page, where every pixel it takes is a pixel of map. */
-.site-foot-compact {
-  padding: 0.4rem 1rem;
-  font-size: 0.75rem;
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  align-items: baseline;
-}
-.site-foot-compact p { margin: 0; }
-
 /* --- explorer ------------------------------------------------------------ */
 
 .explorer {
@@ -394,9 +371,11 @@ a { color: var(--accent); }
    * The panel is absolutely positioned at inset:0 and slid down by
    * translateY(100%) — its own height, which equals the explorer's. That puts
    * its top exactly on the explorer's bottom edge, which is correct, and then
-   * it paints straight over the compact footer below because nothing was
-   * clipping it. On a phone that showed as the season banner and the search
-   * box sitting underneath the map instead of off-screen.
+   * it paints past it because nothing is clipping it. On a phone that showed
+   * as the season banner and the search box sitting underneath the map instead
+   * of off-screen. It painted over the site footer back when there was one;
+   * with the footer gone it would run off the viewport, which is the same bug
+   * wearing different clothes.
    */
   .explorer { grid-template-columns: 1fr; position: relative; overflow: hidden; }
 
@@ -455,9 +434,9 @@ a { color: var(--accent); }
    *
    * The tagline goes: the h1 already says "Orchard Map" and the page is a map
    * of orchards, so the second line was telling people what they could see.
-   * The nav comes up onto the title's row. The footer keeps only the sentence
-   * that changes what somebody does — ring ahead — and links the rest to the
-   * About page, where it is set out properly rather than compressed.
+   * The nav comes up onto the title's row. The footer went entirely: what it
+   * carried is in the nav, or on the About page the nav points at, and the map
+   * took the rows back.
    */
   .site-head {
     flex-wrap: nowrap;
@@ -468,13 +447,6 @@ a { color: var(--accent); }
   .site-head h1 { font-size: 0.95rem; }
   .site-head .tagline { display: none; }
   .site-head nav { gap: 0.75rem; font-size: 0.8rem; }
-
-  .site-foot-compact { padding: 0.3rem 0.75rem; font-size: 0.7rem; }
-  .site-foot { padding: 0.5rem 0.75rem 0.7rem; }
-  /* One row at 375px, which is the whole point of the line: the warning and
-     one link fit, a second link does not. */
-  .site-foot .foot-repo { display: none; }
-  .site-foot .foot-short { line-height: 1.35; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -848,9 +820,10 @@ a { color: var(--accent); }
 /* --- which build this is -------------------------------------------------- */
 
 /*
- * In the header rather than the footer. It is a utility control, it wants to
- * be reachable without scrolling, and on a phone the compact footer has no
- * line to spare — putting it there added one back that I had just removed.
+ * In the header, beside the nav. It is a utility control and it wants to be
+ * reachable without scrolling. It briefly lived in the footer, which cost a
+ * line on a phone that the footer did not have; the footer is gone now, so the
+ * header is the only place left and also the right one.
  */
 .build-tag {
   display: inline-flex;
