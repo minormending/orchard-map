@@ -4,8 +4,20 @@
     {
       "name": "orchard-map",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "port": 4321
+    },
+    {
+      "name": "orchard-map-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "preview",
+        "--port",
+        "4322"
+      ],
+      "port": 4322
     }
   ]
 }

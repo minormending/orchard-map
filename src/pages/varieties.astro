@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
-import { VARIETIES, windowLabel, dayOfYear } from '../lib/season'
+import { VARIETIES, windowLabel, calendarBar } from '../lib/season'
 
 /**
  * The picking calendar, rendered statically.
@@ -13,24 +13,11 @@ import { VARIETIES, windowLabel, dayOfYear } from '../lib/season'
  * It is also the page most likely to earn its keep in search — "when are
  * honeycrisps ready in new york" is a real query with a real answer.
  */
-const AUG_1 = dayOfYear(new Date(2025, 7, 1))
-const NOV_15 = dayOfYear(new Date(2025, 10, 15))
-const SPAN = NOV_15 - AUG_1
-
-const today = dayOfYear()
-
+/* The axis arithmetic moved to lib/season.ts when the orchard pages started
+   drawing the same bars. One calendar, two pages. */
 const rows = VARIETIES
-  .filter((v) => v.start_doy !== null && v.end_doy !== null)
-  .map((v) => {
-    const left = ((v.start_doy! - AUG_1) / SPAN) * 100
-    const width = ((v.end_doy! - v.start_doy!) / SPAN) * 100
-    return {
-      ...v,
-      left: Math.max(0, left),
-      width: Math.max(2, Math.min(100 - Math.max(0, left), width)),
-      ripeToday: v.start_doy! <= today && today <= v.end_doy!,
-    }
-  })
+  .map((v) => ({ v, bar: calendarBar(v) }))
+  .filter((r) => r.bar !== null)
 ---
 <Base
   title="When each apple is ripe in New York | Orchard Map"
@@ -63,7 +50,7 @@ const rows = VARIETIES
   </div>
 
   <div class="cal">
-    {rows.map((v) => (
+    {rows.map(({ v, bar }) => (
       <div class="cal-row">
         <span class="cal-name">
           {v.name}
@@ -71,8 +58,8 @@ const rows = VARIETIES
         </span>
         <span class="cal-track" role="img" aria-label={`${v.name}: ${windowLabel(v)}`}>
           <span
-            class:list={['cal-bar', v.ripeToday && 'cal-bar-now']}
-            style={`left:${v.left}%;width:${v.width}%`}
+            class:list={['cal-bar', bar!.ripeToday && 'cal-bar-now']}
+            style={`left:${bar!.left}%;width:${bar!.width}%`}
           />
         </span>
       </div>

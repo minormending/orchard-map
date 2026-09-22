@@ -5,6 +5,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../styles/app.css'
 import BuildTag from '../components/BuildTag.astro'
+import { ClientRouter } from 'astro:transitions'
 
 interface Props {
   title: string
@@ -31,6 +32,17 @@ const href = canonical ?? new URL(Astro.url.pathname, Astro.site).href
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta name="robots" content="index,follow" />
+    {/*
+      Cross-document view transitions. Every navigation here was a hard cut,
+      which is the single most dated thing about moving around the site.
+
+      Worth saying what this does NOT change: the pages are still 306 static
+      HTML files and every URL still works on its own. The router swaps
+      documents it has already fetched instead of repainting from white, and a
+      browser without the API just navigates as before. Nothing about the
+      crawlable surface — the reason this is Astro at all — moves.
+    */}
+    <ClientRouter />
   </head>
   <body>
     <div class:list={["site", wide && "site-fixed"]}>
