@@ -95,9 +95,24 @@ const jsonLd = {
   {/*
     The other half of the shared-element transition: the name a visitor clicked
     in "Nearest others" on the previous orchard page is this heading, so the
-    browser moves it rather than cutting. The name is per-slug, so only the
-    farm actually navigated to is paired — every other link on the page keeps
-    its own identity and stays put.
+    browser moves it rather than cutting.
+
+    More than one name pairs, which is worth knowing before it looks like a
+    bug. Every farm named on a page carries one — this heading and all five
+    "Nearest others" links — and the browser pairs each name it finds in both
+    documents. Between two farms that are mutual neighbours, that is all six:
+    the clicked link grows into this heading, THIS page's heading shrinks into
+    a link on the next, and the four entries the two lists share slide to their
+    new positions. Between two distant farms the lists do not overlap, nothing
+    pairs, and it is a plain cross-fade.
+
+    That is the intended behaviour rather than a side effect to be trimmed —
+    related farms stay anchored while the page changes — but it is six moving
+    parts, so anybody tuning this should know the count is a property of how
+    much the two neighbour lists overlap and not of anything set here.
+
+    (An earlier version of this comment claimed only the navigated farm paired
+    and every other link stayed put. It does not, and it never did.)
   */}
   <h1 transition:name={`orchard-${orchard.slug}`}>{orchard.name}</h1>
   {where && <p class="where">{where}</p>}
