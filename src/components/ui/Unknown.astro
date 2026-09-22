@@ -1,0 +1,20 @@
+---
+/**
+ * A fact nobody has checked.
+ *
+ * The site's central promise is that an empty answer is honest and a confident
+ * wrong one costs you a two-hour drive, which makes "we do not know" a thing
+ * the interface states rather than a blank cell. It was spelled out nine times
+ * across three pages; naming it means the next person to change how absence
+ * reads — a tooltip, a different colour, an aria hint — changes it once.
+ *
+ * `as` because one of the nine is a whole paragraph rather than a value inside
+ * a sentence. That was the only thing keeping it from being the same thing.
+ */
+interface Props {
+  as?: 'span' | 'p'
+}
+
+const { as: Tag = 'span' } = Astro.props
+---
+<Tag class="unknown"><slot /></Tag>

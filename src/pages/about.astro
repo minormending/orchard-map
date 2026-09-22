@@ -1,5 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
+import FactsTable from '../components/ui/FactsTable.astro'
+import Unknown from '../components/ui/Unknown.astro'
 import { ORCHARDS } from '../lib/orchards'
 import { SOURCES } from '../lib/sources'
 
@@ -53,19 +55,17 @@ const fromOsm = ORCHARDS.filter((o) => o.import_source === 'osm').length
   </p>
 
   <h2>Coverage is uneven, and here is exactly how</h2>
-  <table class="facts">
-    <tbody>
+  <FactsTable>
       {states.map(([state, n]) => (
         <tr>
           <th>{state}</th>
           <td>
             {n} {n === 1 ? 'listing' : 'listings'}
-            {state !== 'NY' && <span class="unknown"> — from OpenStreetMap only</span>}
+            {state !== 'NY' && <Unknown>{' — from OpenStreetMap only'}</Unknown>}
           </td>
         </tr>
       ))}
-    </tbody>
-  </table>
+  </FactsTable>
   <p>
     New York, Connecticut and Pennsylvania each have a state-level source. New York's
     is the richest — its association publishes categories, so those listings arrive

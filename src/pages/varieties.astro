@@ -1,6 +1,10 @@
 ---
 import Base from '../layouts/Base.astro'
-import { VARIETIES, windowLabel, calendarBar } from '../lib/season'
+import Calendar from '../components/ui/Calendar.astro'
+import Callout from '../components/ui/Callout.astro'
+import FactsTable from '../components/ui/FactsTable.astro'
+import Unknown from '../components/ui/Unknown.astro'
+import { VARIETIES } from '../lib/season'
 
 /**
  * The picking calendar, rendered statically.
@@ -13,11 +17,8 @@ import { VARIETIES, windowLabel, calendarBar } from '../lib/season'
  * It is also the page most likely to earn its keep in search — "when are
  * honeycrisps ready in new york" is a real query with a real answer.
  */
-/* The axis arithmetic moved to lib/season.ts when the orchard pages started
-   drawing the same bars. One calendar, two pages. */
-const rows = VARIETIES
-  .map((v) => ({ v, bar: calendarBar(v) }))
-  .filter((r) => r.bar !== null)
+/* The axis arithmetic lives in lib/season.ts and the markup in ui/Calendar,
+   because the orchard pages draw the same bars. One calendar, two pages. */
 ---
 <Base
   title="When each apple is ripe in New York | Orchard Map"
@@ -29,7 +30,7 @@ const rows = VARIETIES
     Jersey Macs in August to EverCrisp in November.
   </p>
 
-  <div class="callout">
+  <Callout>
     <p>
       <strong>These are regional averages, not a report from any farm.</strong> A warm
       spring pulls the whole calendar a week earlier and a cold one pushes it later,
@@ -40,62 +41,26 @@ const rows = VARIETIES
       apples are sold from cold storage into the spring — that does not mean there is
       anything on the tree.
     </p>
-  </div>
+  </Callout>
 
-  <div class="cal-scale">
-    <span></span>
-    <span class="cal-months">
-      <span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span>
-    </span>
-  </div>
-
-  <div class="cal">
-    {rows.map(({ v, bar }) => (
-      <div class="cal-row">
-        <span class="cal-name">
-          {v.name}
-          {/* And said in words next to the name, so the distinction survives
-              without colour vision and without a screen reader. */}
-          {bar!.ripeToday && <span class="cal-now">now</span>}
-          <small>{windowLabel(v)}</small>
-        </span>
-        {/*
-          The label says whether it is ripe, because the bar only says so by
-          turning red. A reader who cannot see the colour — or cannot see the
-          bar — got the window and nothing else, and the two bar colours sit at
-          a contrast of 1.86 against each other, so "cannot see the colour"
-          includes plenty of people looking straight at it.
-        */}
-        <span
-          class="cal-track"
-          role="img"
-          aria-label={`${v.name}: ${windowLabel(v)}${bar!.ripeToday ? ', usually ripe now' : ''}`}
-        >
-          <span
-            class:list={['cal-bar', bar!.ripeToday && 'cal-bar-now']}
-            style={`left:${bar!.left}%;width:${bar!.width}%`}
-          />
-        </span>
-      </div>
-    ))}
-  </div>
+  {/* The whole roster, so the "now" badge marks the handful that are ready
+      against the ones that are not — which is the reading this page is for. */}
+  <Calendar varieties={VARIETIES} scale />
 
   <h2>What they are good for</h2>
-  <table class="facts">
-    <tbody>
-      {VARIETIES.map((v) => (
-        <tr>
-          <th>{v.name}</th>
-          <td>
-            {v.best_for.length > 0
-              ? v.best_for.join('. ')
-              : <span class="unknown">Not described</span>}
-            {v.hint && <><br /><small class="muted">{v.hint}</small></>}
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
+  <FactsTable>
+    {VARIETIES.map((v) => (
+      <tr>
+        <th>{v.name}</th>
+        <td>
+          {v.best_for.length > 0
+            ? v.best_for.join('. ')
+            : <Unknown>Not described</Unknown>}
+          {v.hint && <><br /><small class="muted">{v.hint}</small></>}
+        </td>
+      </tr>
+    ))}
+  </FactsTable>
 
   <h2>Where these came from</h2>
   <p>
