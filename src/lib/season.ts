@@ -104,3 +104,42 @@ export function windowLabel(v: VarietyRow): string | null {
   const to = part(v.harvest_to)
   return from === to ? from : `${from} to ${to}`
 }
+
+/*
+ * Where a variety's window sits on the picking calendar, as percentages.
+ *
+ * This lived inline in varieties.astro, which was fine while one page drew
+ * bars. The orchard pages want the same picture for the farm's own varieties,
+ * and a second copy of the arithmetic is a second chance for the two calendars
+ * to disagree about where September is.
+ *
+ * The axis runs 1 August to 15 November — the picking season with a margin,
+ * not the year, because eight months of empty track either side would make
+ * every bar a sliver. Both ends clamp, so a variety reaching past the axis is
+ * drawn to the edge rather than overflowing its track.
+ */
+const AXIS_START = dayOfYear(new Date(2025, 7, 1))
+const AXIS_END = dayOfYear(new Date(2025, 10, 15))
+const AXIS_SPAN = AXIS_END - AXIS_START
+
+export interface CalendarBar {
+  /** Percent from the left of the track. */
+  left: number
+  /** Percent of the track's width. Never below 2, so a short window is still
+   *  a visible mark rather than a hairline. */
+  width: number
+  /** Whether today falls inside this variety's window. */
+  ripeToday: boolean
+}
+
+export function calendarBar(v: VarietyRow, date: Date = new Date()): CalendarBar | null {
+  if (!hasWindow(v)) return null
+  const today = dayOfYear(date)
+  const left = Math.max(0, ((v.start_doy! - AXIS_START) / AXIS_SPAN) * 100)
+  const width = ((v.end_doy! - v.start_doy!) / AXIS_SPAN) * 100
+  return {
+    left,
+    width: Math.max(2, Math.min(100 - left, width)),
+    ripeToday: v.start_doy! <= today && today <= v.end_doy!,
+  }
+}

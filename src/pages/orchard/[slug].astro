@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro'
 import { ORCHARDS, addressLine, directionsUrl, telUrl } from '../../lib/orchards'
 import { distanceM, milesLabel, tagLabels } from '../../lib/filters'
-import { ripeNow, windowLabel } from '../../lib/season'
+import { ripeNow, windowLabel, calendarBar } from '../../lib/season'
 import { VARIETY_BY_SLUG } from '../../lib/season'
 import { checkedState, pickingLine, hasFarmData, HOURS_FRESHNESS } from '../../lib/checked'
 import { creditFor, fieldCredits } from '../../lib/sources'
@@ -92,7 +92,14 @@ const jsonLd = {
 <Base title={`${title} | Orchard Map`} description={description}>
   <p class="crumbs"><a href={base}>← All orchards</a></p>
 
-  <h1>{orchard.name}</h1>
+  {/*
+    The other half of the shared-element transition: the name a visitor clicked
+    in "Nearest others" on the previous orchard page is this heading, so the
+    browser moves it rather than cutting. The name is per-slug, so only the
+    farm actually navigated to is paired — every other link on the page keeps
+    its own identity and stays put.
+  */}
+  <h1 transition:name={`orchard-${orchard.slug}`}>{orchard.name}</h1>
   {where && <p class="where">{where}</p>}
 
   <p>
@@ -123,8 +130,13 @@ const jsonLd = {
   )}
 
   <h2>What they do</h2>
+  {/*
+    The same pill the map filters with. It is one taxonomy — what a farm does
+    and what you can filter for are the same list — so rendering it as chips
+    on one page and bullets on the other was two vocabularies for one idea.
+  */}
   {tags.length > 0 ? (
-    <ul>{tags.map((t) => <li>{t}</li>)}</ul>
+    <ul class="tags">{tags.map((t) => <li class="tag">{t}</li>)}</ul>
   ) : (
     <p class="unknown">{credit.name} lists them without a category.</p>
   )}
@@ -143,9 +155,34 @@ const jsonLd = {
           {orchard.name} grows {grows.length} {grows.length === 1 ? 'variety' : 'varieties'} we know of,
           and as of {builtLabel} these are usually ready:
         </p>
-        <ul>
-          {ripeHere.map((v) => <li><strong>{v.name}</strong> — {windowLabel(v)}</li>)}
-        </ul>
+        {/*
+          The calendar's own bars, not a bulleted restatement of them. A date
+          range read as prose — "early September to late September" — is a
+          sentence you have to hold in your head to compare two varieties; the
+          same fact as a bar is a picture you can read at a glance, and it is
+          already drawn on the Calendar page for the whole region.
+        */}
+        <div class="cal cal-inline">
+          {ripeHere.map((v) => {
+            const bar = calendarBar(v!, built)
+            return (
+              <div class="cal-row">
+                <span class="cal-name">
+                  {v!.name}
+                  <small>{windowLabel(v!)}</small>
+                </span>
+                <span class="cal-track" role="img" aria-label={`${v!.name}: ${windowLabel(v!)}`}>
+                  {bar && (
+                    <span
+                      class:list={['cal-bar', bar.ripeToday && 'cal-bar-now']}
+                      style={`left:${bar.left}%;width:${bar.width}%`}
+                    />
+                  )}
+                </span>
+              </div>
+            )
+          })}
+        </div>
         <p class="muted">
           Their list, our calendar. Seasons move a week or two with the weather and
           this is not a report from the trees —
@@ -165,9 +202,27 @@ const jsonLd = {
         As of {builtLabel}, Hudson Valley orchards are usually picking
         {' '}{ripe.map((v) => v.name).join(', ')}.
       </p>
-      <ul>
-        {ripe.map((v) => <li>{v.name} — {windowLabel(v)}</li>)}
-      </ul>
+      <div class="cal cal-inline">
+        {ripe.map((v) => {
+          const bar = calendarBar(v, built)
+          return (
+            <div class="cal-row">
+              <span class="cal-name">
+                {v.name}
+                <small>{windowLabel(v)}</small>
+              </span>
+              <span class="cal-track" role="img" aria-label={`${v.name}: ${windowLabel(v)}`}>
+                {bar && (
+                  <span
+                    class:list={['cal-bar', bar.ripeToday && 'cal-bar-now']}
+                    style={`left:${bar.left}%;width:${bar.width}%`}
+                  />
+                )}
+              </span>
+            </div>
+          )
+        })}
+      </div>
       <p class="muted">
         Regional timing, <strong>not</strong> a report from this farm — nobody has
         recorded which varieties {orchard.name} grows. <a href={`${base}varieties`}>The
@@ -280,7 +335,7 @@ const jsonLd = {
   <ul class="nearby">
     {nearby.map(({ o, d }) => (
       <li>
-        <a href={`${base}orchard/${o.slug}`}>{o.name}</a>
+        <a href={`${base}orchard/${o.slug}`} transition:name={`orchard-${o.slug}`}>{o.name}</a>
         <span class="n-where"> — {o.town}, {milesLabel(d)} away</span>
       </li>
     ))}
