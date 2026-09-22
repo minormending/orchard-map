@@ -99,12 +99,6 @@ a { color: var(--accent); }
 
 .site-head h1 a { color: inherit; text-decoration: none; }
 
-.site-head .tagline {
-  color: var(--ink-2);
-  font-size: 0.82rem;
-  margin: 0;
-}
-
 .site-head nav {
   margin-left: auto;
   display: flex;
@@ -425,18 +419,16 @@ a { color: var(--accent); }
   .maplibregl-ctrl-bottom-right { z-index: 25; }
 
   .sheet { left: 0.5rem; right: 0.5rem; bottom: 4rem; width: auto; }
-  .site-head { flex-wrap: wrap; }
-  .site-head .tagline { flex-basis: 100%; }
 
   /*
    * A phone had 190px of chrome around a 622px map — 23% of the screen spent
-   * on a title, a tagline and two paragraphs of provenance.
+   * on a title, a tagline and two paragraphs of provenance. All that is left
+   * of it is the title and the nav, on one row.
    *
-   * The tagline goes: the h1 already says "Orchard Map" and the page is a map
-   * of orchards, so the second line was telling people what they could see.
-   * The nav comes up onto the title's row. The footer went entirely: what it
-   * carried is in the nav, or on the About page the nav points at, and the map
-   * took the rows back.
+   * The argument that hid the tagline here — the h1 already says "Orchard Map"
+   * and the page is a map of orchards, so the second line was telling people
+   * what they could see — turned out to hold at every width, so it is gone
+   * rather than hidden. The footer went the same way.
    */
   .site-head {
     flex-wrap: nowrap;
@@ -445,7 +437,6 @@ a { color: var(--accent); }
     gap: 0.5rem;
   }
   .site-head h1 { font-size: 0.95rem; }
-  .site-head .tagline { display: none; }
   .site-head nav { gap: 0.75rem; font-size: 0.8rem; }
 }
 
